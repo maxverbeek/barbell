@@ -9,8 +9,10 @@ import Quickshell
 // is ever built through that flake, generate this file from it instead.
 Singleton {
     readonly property int barHeight: 34
-    // Sit at the bottom while ags still owns the top edge.
-    readonly property bool bottom: true
+    // The top edge is home now that ags is retired; flip for bottom-bar life.
+    // Everything respects this — menus drop from the right edge, OSD and
+    // notifications keep clear of it.
+    readonly property bool bottom: false
 
     // --- raw palette ---------------------------------------------------
     readonly property color sumiInk: "#1f1f28"   // background
