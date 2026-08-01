@@ -24,12 +24,14 @@ PanelWindow {
     // Rows are built as one flat list so the keyboard has a single index to
     // walk. Section headers aren't rows: you can't select them, so they're
     // rendered by the delegate when the device above belongs to a new group.
+    // Levels first: adjusting volume is the common errand, picking a device
+    // the occasional one, so the cursor opens on the thing you came for.
     readonly property var rows: {
         const out = [];
-        for (const n of Audio.sinks) out.push({ kind: "sink", node: n });
-        for (const n of Audio.sources) out.push({ kind: "source", node: n });
-        out.push({ kind: "volume", which: "sink" });
-        out.push({ kind: "volume", which: "source" });
+        out.push({ kind: "volume", which: "sink", section: "Levels" });
+        out.push({ kind: "volume", which: "source", section: "Levels" });
+        for (const n of Audio.sinks) out.push({ kind: "sink", node: n, section: "Output" });
+        for (const n of Audio.sources) out.push({ kind: "source", node: n, section: "Input" });
         return out;
     }
 
@@ -56,11 +58,7 @@ PanelWindow {
     // rather than doing it in the open() call.
     onOpenChanged: {
         if (open) {
-            // Land on the device already in use, not on whatever sorted first.
-            // Opening the menu is usually "switch away from this", so the
-            // cursor starts where you are and one keypress moves you off it.
-            selected = Math.max(0, rows.findIndex(
-                r => r.kind === "sink" && r.node === Audio.sink));
+            selected = 0;               // the output level, the usual errand
             keys.forceActiveFocus();
         }
     }
@@ -68,6 +66,31 @@ PanelWindow {
     function move(delta) {
         if (rows.length === 0) return;
         selected = (selected + delta + rows.length) % rows.length;
+    }
+
+    // [ and ] jump between sections. Forward lands on the first row of the
+    // next section; backward goes to the top of the current one first, so a
+    // repeated [ walks up section by section rather than sticking — the same
+    // way [[ behaves in vim.
+    function jumpSection(dir) {
+        if (rows.length === 0) return;
+        const here = rows[selected].section;
+        if (dir > 0) {
+            for (let i = selected + 1; i < rows.length; i++)
+                if (rows[i].section !== here) { selected = i; return; }
+            selected = rows.length - 1;     // already in the last section
+        } else {
+            // Walk back to where this section began.
+            let start = selected;
+            while (start > 0 && rows[start - 1].section === here) start--;
+            if (start < selected) { selected = start; return; }
+            // Already at the top of it: go to the start of the previous one.
+            if (start === 0) return;
+            const prev = rows[start - 1].section;
+            let i = start - 1;
+            while (i > 0 && rows[i - 1].section === prev) i--;
+            selected = i;
+        }
     }
 
     // Enter on a device row makes it the default; on a volume row it toggles
@@ -110,6 +133,8 @@ PanelWindow {
                 break;
             case Qt.Key_H: case Qt.Key_Left:           root.nudge(-0.05); break;
             case Qt.Key_L: case Qt.Key_Right:          root.nudge(0.05); break;
+            case Qt.Key_BracketLeft:                   root.jumpSection(-1); break;
+            case Qt.Key_BracketRight:                  root.jumpSection(1); break;
             case Qt.Key_Return: case Qt.Key_Enter:
             case Qt.Key_Space:                         root.activate(); break;
             case Qt.Key_M:                             root.activate(); break;
@@ -167,13 +192,10 @@ PanelWindow {
                         onClicked: { root.selected = index; root.activate(); }
                         onScrolled: d => { root.selected = index; root.nudge(d); }
 
-                        // A header sits above the first row of each group.
-                        heading: index === 0 ? "Output"
-                            : modelData.kind === "source"
-                                && root.rows[index - 1].kind === "sink" ? "Input"
-                            : modelData.kind === "volume"
-                                && root.rows[index - 1].kind !== "volume" ? "Levels"
-                            : ""
+                        // A header sits above the first row of each section.
+                        heading: index === 0
+                            || root.rows[index - 1].section !== modelData.section
+                                ? modelData.section : ""
                     }
                 }
             }
