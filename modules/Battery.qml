@@ -15,9 +15,9 @@ Item {
     property bool charging: false
 
     // Thresholds are the tuning knob; colour reinforces the fill, never replaces it.
-    readonly property color state: charging ? Theme.green
-        : percent <= 10 ? Theme.red
-        : percent <= 25 ? Theme.yellow
+    readonly property color state: charging ? Theme.good
+        : percent <= 10 ? Theme.bad
+        : percent <= 25 ? Theme.warn
         : Theme.fg
 
     implicitWidth: body.width + cap.width + (charging ? glyph.width + 2 : 0)

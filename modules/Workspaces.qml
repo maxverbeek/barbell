@@ -20,7 +20,7 @@ RowLayout {
             implicitWidth: Math.max(24, row.implicitWidth + 12)
             implicitHeight: 22
             radius: 6
-            color: modelData.is_active ? Theme.itemActive : (mouse.containsMouse ? Theme.itemHover : Theme.itemBg)
+            color: modelData.is_active ? Theme.islandActive : (mouse.containsMouse ? Theme.islandHover : Theme.island)
 
             Behavior on implicitWidth { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
@@ -32,7 +32,7 @@ RowLayout {
                 Text {
                     visible: windows.count === 0
                     text: modelData.idx
-                    color: modelData.is_urgent ? Theme.red : (modelData.is_active ? Theme.fg : Theme.fgDim)
+                    color: modelData.is_urgent ? Theme.bad : (modelData.is_active ? Theme.fg : Theme.fgDim)
                     font.family: Theme.font
                     font.pixelSize: 12
                 }

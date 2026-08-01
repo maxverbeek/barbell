@@ -1,7 +1,9 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Services.UPower
 import ".."
+import "../services"
 
 PanelWindow {
     // Variants injects the screen as `modelData`.
@@ -19,13 +21,24 @@ PanelWindow {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
-            spacing: 8
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            spacing: 14
 
             Workspaces { screenName: modelData.name }
 
             Item { Layout.fillWidth: true }
+
+            // Exceptions and the always-drawn constants, in a fixed order.
+            AudioStatus {}
+
+            Battery {
+                // No battery on a desktop, and displayDevice is briefly null at startup.
+                visible: UPower.displayDevice?.isLaptopBattery ?? false
+                percent: Math.round((UPower.displayDevice?.percentage ?? 0) * 100)
+                charging: UPower.displayDevice?.state === UPowerDeviceState.Charging
+                Layout.alignment: Qt.AlignVCenter
+            }
 
             Clock {}
         }
