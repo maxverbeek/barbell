@@ -124,11 +124,16 @@ Singleton {
 
     function toggleTunnel(t) {
         if (!t) return;
-        if (isTailscale(t)) {
-            Quickshell.execDetached(["tailscale", t.active ? "down" : "up"]);
-        } else {
-            Quickshell.execDetached(["nmcli", "connection", t.active ? "down" : "up", t.name]);
-        }
+        const cmd = isTailscale(t)
+            ? ["tailscale", t.active ? "down" : "up"]
+            : ["nmcli", "connection", t.active ? "down" : "up", t.name];
+        // Failures land as a notification rather than vanishing: a detached
+        // command that dies silently reads as "Enter does nothing", and both
+        // tailscale-without-an-operator and a missing NM plugin did exactly
+        // that. The notification goes through our own daemon, so the error
+        // arrives where you're already looking.
+        Quickshell.execDetached(["bash", "-c",
+            `out=$(${cmd.map(c => `'${c}'`).join(" ")} 2>&1) || notify-send -a network "VPN" "$out"`]);
         // nmcli monitor will tell us when it lands; nothing optimistic here.
     }
 
