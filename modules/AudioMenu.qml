@@ -96,28 +96,38 @@ PanelWindow {
         selected = (selected + delta + rows.length) % rows.length;
     }
 
-    // [ and ] jump between sections. Forward lands on the first row of the
-    // next section; backward goes to the top of the current one first, so a
-    // repeated [ walks up section by section rather than sticking — the same
-    // way [[ behaves in vim.
+    // Where a section's cursor should land: the device in use, so ] from the
+    // sliders puts you on the current output and one j moves off it. Without
+    // this you'd land on whatever happened to sort first, which since the list
+    // stopped reordering is rarely the one you care about.
+    function anchorOf(section) {
+        const first = rows.findIndex(r => r.section === section);
+        if (first < 0) return -1;
+        const active = rows.findIndex(r => r.section === section
+            && r.kind !== "volume"
+            && r.node === (r.kind === "source" ? Audio.source : Audio.sink));
+        return active >= 0 ? active : first;
+    }
+
+    // [ and ] move between sections, landing on the active device in each.
+    // Backward goes to the current section's anchor first when you're below
+    // it, so a repeated [ walks up rather than sticking — the way [[ behaves
+    // in vim. Neither wraps.
     function jumpSection(dir) {
         if (rows.length === 0) return;
         const here = rows[selected].section;
         if (dir > 0) {
             for (let i = selected + 1; i < rows.length; i++)
-                if (rows[i].section !== here) { selected = i; return; }
+                if (rows[i].section !== here) { selected = anchorOf(rows[i].section); return; }
             selected = rows.length - 1;     // already in the last section
         } else {
-            // Walk back to where this section began.
+            const anchor = anchorOf(here);
+            if (selected > anchor) { selected = anchor; return; }
+            // At or above this section's anchor: go to the previous section.
             let start = selected;
             while (start > 0 && rows[start - 1].section === here) start--;
-            if (start < selected) { selected = start; return; }
-            // Already at the top of it: go to the start of the previous one.
             if (start === 0) return;
-            const prev = rows[start - 1].section;
-            let i = start - 1;
-            while (i > 0 && rows[i - 1].section === prev) i--;
-            selected = i;
+            selected = anchorOf(rows[start - 1].section);
         }
     }
 
