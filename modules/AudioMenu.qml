@@ -26,7 +26,7 @@ PanelWindow {
     // rendered by the delegate when the device above belongs to a new group.
     // Levels first: adjusting volume is the common errand, picking a device
     // the occasional one, so the cursor opens on the thing you came for.
-    readonly property var rows: {
+    readonly property var allRows: {
         const out = [];
         out.push({ kind: "volume", which: "sink", section: "Levels" });
         out.push({ kind: "volume", which: "source", section: "Levels" });
@@ -35,7 +35,35 @@ PanelWindow {
         return out;
     }
 
+    // `/` opens a filter. Everything downstream — move, jumpSection, the
+    // delegate, activate — works off `rows`, so filtering is the only thing
+    // search has to do; none of the index arithmetic needs to know about it.
+    property bool searching: false
+    property string query: ""
+
+    readonly property var rows: {
+        if (query === "") return allRows;
+        const q = query.toLowerCase();
+        // Sliders always match: they're not named things, and losing your
+        // volume control because you typed a device name would be daft.
+        return allRows.filter(r => r.kind === "volume"
+            || Audio.label(r.node).toLowerCase().includes(q));
+    }
+
     property int selected: 0
+
+    // Typing a filter should put the cursor on what you were looking for —
+    // the first device that matched, not the slider that always survives the
+    // filter. With no query it also has to stay in bounds when devices come
+    // and go (a headset connecting rewrites the list under you).
+    onRowsChanged: {
+        if (query !== "") {
+            const first = rows.findIndex(r => r.kind !== "volume");
+            selected = first >= 0 ? first : 0;
+        } else if (selected >= rows.length) {
+            selected = Math.max(0, rows.length - 1);
+        }
+    }
 
     // Layer-shell surfaces don't get keyboard input unless they ask. Exclusive
     // means the menu owns the keyboard while it's up, which is what makes Esc
@@ -102,7 +130,12 @@ PanelWindow {
         else if (row.kind === "source") Audio.setSource(row.node);
         else if (row.which === "sink") Audio.toggleSinkMute();
         else Audio.toggleMicMute();
+        // Picking a device is the end of a search — drop the filter so the
+        // menu is back to normal if you keep it open.
+        if (row.kind !== "volume") clearSearch();
     }
+
+    function clearSearch() { searching = false; query = ""; }
 
     // h/l and the horizontal arrows adjust whichever stream the current row
     // belongs to, so you can land on an output and change its level without
@@ -122,7 +155,35 @@ PanelWindow {
         focus: true
 
         Keys.onPressed: event => {
+            // While typing a filter, letters are text rather than commands.
+            // Only the keys that can't be part of a device name stay live:
+            // moving the cursor, choosing, and getting out.
+            if (root.searching) {
+                switch (event.key) {
+                case Qt.Key_Escape:
+                    // First Esc abandons the search, a second closes the menu —
+                    // so a mistyped filter doesn't cost you the whole menu.
+                    root.clearSearch();
+                    break;
+                case Qt.Key_Return: case Qt.Key_Enter:  root.activate(); break;
+                case Qt.Key_Down:                      root.move(1); break;
+                case Qt.Key_Up:                        root.move(-1); break;
+                case Qt.Key_Backspace:
+                    root.query = root.query.slice(0, -1);
+                    break;
+                default:
+                    if (event.text && event.text >= " ") root.query += event.text;
+                    else return;
+                }
+                event.accepted = true;
+                return;
+            }
+
             switch (event.key) {
+            case Qt.Key_Slash:
+                root.searching = true;
+                root.query = "";
+                break;
             case Qt.Key_Escape:                        root.hide(); break;
             case Qt.Key_J: case Qt.Key_Down:           root.move(1); break;
             case Qt.Key_K: case Qt.Key_Up:             root.move(-1); break;
@@ -176,6 +237,39 @@ PanelWindow {
                 id: content
                 anchors { fill: parent; margins: 8 }
                 spacing: 1
+
+                // Only present while filtering — the menu is small enough that
+                // a permanent search box would be more furniture than help.
+                RowLayout {
+                    visible: root.searching
+                    Layout.fillWidth: true
+                    Layout.bottomMargin: 4
+                    Layout.leftMargin: 6
+                    spacing: 6
+
+                    Text {
+                        text: "/"
+                        color: Theme.accent
+                        font { family: Theme.font; pixelSize: 12; weight: Font.DemiBold }
+                    }
+
+                    Text {
+                        text: root.query
+                        color: Theme.fg
+                        font { family: Theme.font; pixelSize: 12 }
+                        Layout.fillWidth: true
+                    }
+
+                    // Silent when a filter matches nothing, and you'd wonder
+                    // whether the menu had broken.
+                    Text {
+                        visible: root.rows.length === 0
+                            || !root.rows.some(r => r.kind !== "volume")
+                        text: "no match"
+                        color: Theme.fgFaint
+                        font { family: Theme.font; pixelSize: 11 }
+                    }
+                }
 
                 Repeater {
                     model: root.rows
