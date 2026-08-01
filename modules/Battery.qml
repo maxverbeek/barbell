@@ -34,40 +34,30 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         radius: 5
         color: root.rest
-        clip: true
 
-        // The charged part is the whole body in the level colour, with the
-        // UNCHARGED part masked over it from the right. Drawing it the other way
-        // round — a fill that grows from the left — means the fill owns the left
-        // corners, and Qt clamps a radius to half the smaller side, so a narrow
-        // fill gets a tighter arc than the body and reads as a square block
-        // sitting inside a rounded end. Masking leaves the left corners as the
-        // body's own at every percentage.
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            color: root.level
+        // How far the charged colour reaches. Never so thin it vanishes: a 1%
+        // battery must still show a sliver.
+        property real fillWidth: root.percent <= 0 ? 0
+            : Math.max(width * Math.min(100, root.percent) / 100, 3)
+        Behavior on fillWidth { NumberAnimation { duration: 240; easing.type: Easing.OutQuad } }
+
+        // The charged part is a FULL-SIZE rounded rect — so its corners are
+        // always the body's own arcs — revealed through a rectangular clip
+        // window of fillWidth. The clip only ever makes the straight vertical
+        // cut at the colour boundary; it never touches a corner's shape. Any
+        // scheme where a child rect's own edge lands on a body corner fails,
+        // because Qt clamps a radius to half the rect's smaller side.
+        Item {
+            width: body.fillWidth
+            height: parent.height
+            clip: true
+            Rectangle {
+                width: body.width
+                height: body.height
+                radius: body.radius
+                color: root.level
+            }
         }
-
-        Rectangle {
-            id: uncharged
-            anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
-            width: parent.width * (100 - Math.max(0, Math.min(100, root.percent))) / 100
-            // Square on the left — that's the charged/uncharged boundary — but
-            // the body's own radius on the right, because that edge *is* the
-            // body's corner. Qt's clip is a rectangular scissor test, so it
-            // cannot round this for us: leaving it square shows a hard corner
-            // poking out of the rounded end.
-            topLeftRadius: 0
-            bottomLeftRadius: 0
-            topRightRadius: parent.radius
-            bottomRightRadius: parent.radius
-            color: root.rest
-            Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutQuad } }
-        }
-
-        // Kept as an alias so the text clipping below reads naturally.
-        readonly property real fillWidth: width - uncharged.width
 
         // Drawn twice, each copy clipped to one side of the boundary: dark over
         // the charged part, light over the rest. A single Text can't do it —
