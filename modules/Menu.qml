@@ -204,6 +204,15 @@ PanelWindow {
                 return;
             }
 
+            // s/w/b cross between the menus without closing and reopening.
+            // One summon gets you in; from there they're tabs. Checked before
+            // the per-menu keys so a menu can't shadow the way out of itself.
+            switch (event.key) {
+            case Qt.Key_S: Menus.open("audio");     event.accepted = true; return;
+            case Qt.Key_W: Menus.open("network");   event.accepted = true; return;
+            case Qt.Key_B: Menus.open("bluetooth"); event.accepted = true; return;
+            }
+
             switch (event.key) {
             case Qt.Key_Slash:
                 root.searching = true;
@@ -263,6 +272,59 @@ PanelWindow {
                 id: content
                 anchors { fill: parent; margins: 8 }
                 spacing: 1
+
+                // The three menus are tabs on one surface, so which one you're
+                // in and how to reach the others is visible rather than
+                // remembered. The letter is the key that gets you there.
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.bottomMargin: 6
+                    Layout.leftMargin: 2
+                    spacing: 2
+
+                    Repeater {
+                        model: [
+                            { menu: "audio",     key: "s", glyph: "󰕾" },
+                            { menu: "network",   key: "w", glyph: "󰤨" },
+                            { menu: "bluetooth", key: "b", glyph: "󰂯" }
+                        ]
+
+                        delegate: Rectangle {
+                            required property var modelData
+                            readonly property bool here: modelData.menu === root.name
+
+                            Layout.fillWidth: true
+                            implicitHeight: 22
+                            radius: 5
+                            color: here ? Theme.islandActive : "transparent"
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 5
+
+                                Text {
+                                    text: modelData.glyph
+                                    font { family: Theme.iconFont; pixelSize: 12 }
+                                    color: parent.parent.here ? Theme.fg : Theme.fgFaint
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+
+                                Text {
+                                    text: modelData.key
+                                    font { family: Theme.font; pixelSize: 10 }
+                                    color: parent.parent.here ? Theme.fgDim : Theme.fgFaint
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: Menus.open(modelData.menu)
+                            }
+                        }
+                    }
+                }
 
                 // Only present while filtering — the menus are small enough
                 // that a permanent search box would be furniture.

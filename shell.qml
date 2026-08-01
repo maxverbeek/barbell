@@ -29,14 +29,18 @@ ShellRoot {
         delegate: BluetoothMenu {}
     }
 
-    // Summoned from niri or wlr-which-key:
-    //   qs ipc call menu audio     — toggle the audio menu
-    //   qs ipc call menu network   — toggle the network menu
-    //   qs ipc call menu bluetooth — toggle the bluetooth menu
+    // Summoned from niri or wlr-which-key. One bind is enough — the menus are
+    // tabs on one surface, so s/w/b crosses between them once you're in:
+    //
+    //   qs ipc call menu open      — open on sound, the usual errand
+    //   qs ipc call menu audio     — or land directly on one
+    //   qs ipc call menu network
+    //   qs ipc call menu bluetooth
     //   qs ipc call menu close     — dismiss whatever is open
     IpcHandler {
         target: "menu"
 
+        function open(): void { Menus.toggle("audio"); }
         function audio(): void { Menus.toggle("audio"); }
         function network(): void { Menus.toggle("network"); }
         function bluetooth(): void { Menus.toggle("bluetooth"); }
