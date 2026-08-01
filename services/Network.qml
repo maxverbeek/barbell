@@ -39,6 +39,32 @@ Singleton {
         return false;
     }
 
+    // Everything in range, strongest first, with the connected one pinned to
+    // the top. Networks with no name are hidden SSIDs you can't pick anyway.
+    readonly property var networks: {
+        const ns = (wifiDevice?.networks?.values ?? []).filter(n => n.name);
+        return ns.slice().sort((a, b) => {
+            if (a.connected !== b.connected) return a.connected ? -1 : 1;
+            // Saved networks above unknown ones at similar strength: they're
+            // one keypress to join, the others want a password.
+            if (a.known !== b.known) return a.known ? -1 : 1;
+            return b.signalStrength - a.signalStrength;
+        });
+    }
+
+    // Scanning is only worth doing while something is looking at the list.
+    function scan(on) {
+        if (wifiDevice) wifiDevice.scannerEnabled = on;
+    }
+
+    function toggleWifi() { Networking.wifiEnabled = !Networking.wifiEnabled; }
+
+    // Open networks and saved ones connect directly; anything else needs a
+    // password, which the menu collects before calling connectWithPsk.
+    function needsPassword(n) {
+        return n && !n.known && n.security !== WifiSecurityType.Open;
+    }
+
     // --- vpn -----------------------------------------------------------
     property bool vpnActive: false
     property string vpnName: ""

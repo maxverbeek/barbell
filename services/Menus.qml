@@ -18,4 +18,10 @@ Singleton {
     function close() { current = ""; }
     function toggle(name) { current = current === name ? "" : name; }
     function isOpen(name) { return current === name; }
+
+    // The open menu registers a describe function here so `qs ipc call menu
+    // dump` can report what it's showing. Screenshots go through wlr
+    // screencopy, which doesn't always work; this reads the real row list and
+    // cursor from the running instance.
+    property var describe: null
 }

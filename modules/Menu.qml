@@ -94,8 +94,27 @@ PanelWindow {
             clearSearch();
             selected = initialRow();
             keys.forceActiveFocus();
+            Menus.describe = describe;
         }
     }
+
+    // Text dump of what's on screen, for `qs ipc call menu dump`.
+    function describe() {
+        const out = [`${name}  card ${cardWidth}x${Math.round(card.height)}`
+            + (searching ? `  /${query}` : "")];
+        let section = "";
+        for (let i = 0; i < rows.length; i++) {
+            if (rows[i].section !== section) {
+                section = rows[i].section;
+                out.push(`  [${section}]`);
+            }
+            out.push(`  ${i === selected ? ">" : " "} ${rowLabel(rows[i])}`);
+        }
+        return out.join("\n");
+    }
+
+    // How a row reads in the dump. Menus override it to name their own rows.
+    property var rowLabel: row => rowText(row) || row.kind
 
     // Where the cursor starts. Overridden by menus that want somewhere
     // specific — the audio menu opens on the output level.
@@ -147,6 +166,10 @@ PanelWindow {
         focus: true
 
         Keys.onPressed: event => {
+            // A menu that's collecting text — a wifi password — needs the keys
+            // before any of the navigation does, including Enter and Esc.
+            if (root.handleKey(event)) { event.accepted = true; return; }
+
             // While typing a filter, letters are text rather than commands.
             // Only the keys that can't be part of a name stay live: moving the
             // cursor, choosing, and getting out.

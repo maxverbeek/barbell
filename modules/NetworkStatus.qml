@@ -71,7 +71,7 @@ Row {
             anchors.fill: parent
             anchors.margins: -4
             hoverEnabled: true
-            onClicked: root.openMenu()
+            onClicked: Menus.toggle("network")
         }
     }
 }

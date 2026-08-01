@@ -57,8 +57,9 @@ Menu {
     }
 
     // m mutes whatever row you're on without having to walk to its slider.
+    // Not while searching, where it's just a letter in the query.
     handleKey: event => {
-        if (event.key !== Qt.Key_M) return false;
+        if (root.searching || event.key !== Qt.Key_M) return false;
         const row = root.rows[root.selected];
         if (!row) return true;
         const isSource = row.kind === "source"
