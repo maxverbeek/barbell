@@ -1,6 +1,6 @@
 import QtQuick
-import Quickshell.Bluetooth
 import ".."
+import "../services" as Svc
 
 // Bluetooth, following the interest rules. Powered-on-with-nothing-connected
 // is the boring case and the one that's true most of the time, so it stays
@@ -14,29 +14,12 @@ import ".."
 Item {
     id: root
 
-    readonly property var adapter: Bluetooth.defaultAdapter
-    readonly property var connectedDevices: {
-        const ds = Bluetooth.devices?.values ?? [];
-        return ds.filter(d => d.connected);
-    }
-    readonly property bool anyConnected: connectedDevices.length > 0
-
-    // A device that's mid-connect is worth showing so a failed pair doesn't
-    // look like nothing happened.
-    readonly property bool busy: {
-        const ds = Bluetooth.devices?.values ?? [];
-        return ds.some(d => d.state === BluetoothDeviceState.Connecting
-                         || d.state === BluetoothDeviceState.Disconnecting);
-    }
-
+    readonly property bool busy: Svc.Bluetooth.devices.some(d => Svc.Bluetooth.busy(d))
     // Explicitly off is worth one dim glyph — otherwise "why won't my
     // headphones pair" has no answer on the bar.
-    readonly property bool disabled: adapter
-        && adapter.state === BluetoothAdapterState.Disabled
+    readonly property bool disabled: Svc.Bluetooth.adapter && !Svc.Bluetooth.enabled
 
-    signal openMenu()
-
-    visible: anyConnected || busy || disabled
+    visible: Svc.Bluetooth.anyConnected || busy || disabled
     implicitWidth: visible ? icon.implicitWidth : 0
     implicitHeight: icon.implicitHeight
 
@@ -64,6 +47,6 @@ Item {
         anchors.fill: parent
         anchors.margins: -4
         hoverEnabled: true
-        onClicked: root.openMenu()
+        onClicked: Svc.Menus.toggle("bluetooth")
     }
 }
