@@ -13,7 +13,6 @@ Item {
 
     property int percent: 76
     property bool charging: false
-    property bool saver: false
 
     // Thresholds are the tuning knob; colour reinforces the fill, never replaces it.
     readonly property color state: charging ? Theme.green
@@ -21,27 +20,56 @@ Item {
         : percent <= 25 ? Theme.yellow
         : Theme.fg
 
-    implicitWidth: body.width + cap.width + (charging || saver ? glyph.width + 3 : 0)
+    implicitWidth: body.width + cap.width + (charging ? glyph.width + 2 : 0)
     implicitHeight: 15
 
+    // Drawn as a solid pill with the EMPTY part masked out in the background
+    // colour, rather than a fill that grows from the left. The filled region then
+    // has no shape of its own — it's just the body showing through — so it
+    // inherits the body's rounded corners for free at every percentage. Growing
+    // a fill instead means hand-managing its corners, which leaves a curved
+    // sliver near 100% and a stub indistinguishable from the border near 0%.
     Rectangle {
         id: body
-        width: 34
-        height: 16
+        width: 26
+        height: 13
         anchors.verticalCenter: parent.verticalCenter
-        radius: 5
-        color: "transparent"
-        border.width: 1.5
-        border.color: root.state
+        radius: 4
+        color: root.state
         opacity: 0.95
+        clip: true
 
+        readonly property real bw: 1.25
+        // The level is read against the INTERIOR — the span between the borders,
+        // not the outer width. Measuring against the outer width makes the mask
+        // start behind the border, so every percentage reads a little low and
+        // 100% still shows a sliver of empty.
+        readonly property real inner: width - bw * 2
+        // Where the filled region ends — the text halves clip against this.
+        readonly property real filled: bw + inner * Math.min(100, root.percent) / 100
+
+        // Masks the empty part. Runs to the outer edge on the right so the
+        // body's clip trims it to the rounded outline with no corner maths;
+        // only its left edge — the boundary you actually see — is positioned.
         Rectangle {
-            id: fill
-            anchors { left: parent.left; top: parent.top; bottom: parent.bottom; margins: 1.5 }
-            width: Math.max(2, (parent.width - 3) * Math.min(100, root.percent) / 100)
-            radius: 3.5
-            color: root.state
+            id: empty
+            anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
+            width: Math.max(0, parent.width - parent.filled)
+            radius: 0
+            color: Theme.bg0
             Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutQuad } }
+        }
+
+        // The outline, drawn as a sibling ON TOP of the mask. A Rectangle's own
+        // `border` paints underneath its children, so the mask would eat its
+        // inner edge and the empty side would look thin or broken.
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: "transparent"
+            border.width: 1.25
+            border.color: root.state
+            z: 1
         }
 
         // The number is drawn twice, each copy clipped to one side of the fill
@@ -56,23 +84,22 @@ Item {
             delegate: Item {
                 required property int index
                 anchors.fill: parent
-                anchors.margins: 1.5
-                clip: true
+                z: 2   // above the outline
 
                 // 0 = filled side (clip to the fill), 1 = empty side (clip past it)
                 Item {
-                    x: index === 0 ? 0 : fill.width - 1.5
-                    width: index === 0 ? fill.width - 1.5 : parent.width - (fill.width - 1.5)
+                    x: index === 0 ? 0 : body.filled
+                    width: index === 0 ? body.filled : parent.width - body.filled
                     height: parent.height
                     clip: true
 
                     Text {
-                        // Positioned relative to the body, not to this clip window,
-                        // so both copies sit in the same place.
-                        x: (body.width - 3) / 2 - width / 2 - parent.x
+                        // Positioned against the body, not this clip window, so
+                        // both copies land in exactly the same place.
+                        x: body.width / 2 - width / 2 - parent.x
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.percent
-                        font { family: Theme.font; pixelSize: 10; weight: Font.DemiBold }
+                        font { family: Theme.font; pixelSize: 9; weight: Font.DemiBold }
                         color: index === 0 ? Theme.bg0 : root.state
                     }
                 }
@@ -84,20 +111,21 @@ Item {
     Rectangle {
         id: cap
         anchors { left: body.right; verticalCenter: body.verticalCenter }
-        width: 2.5
-        height: 6
+        width: 2
+        height: 5
         radius: 1
         color: root.state
         opacity: 0.95
     }
 
+    // Charging bolt, sitting past the terminal.
     Text {
         id: glyph
-        visible: root.charging || root.saver
-        anchors { left: cap.right; leftMargin: 3; verticalCenter: parent.verticalCenter }
-        text: root.charging ? "" : "+"
-        font.family: Theme.font
-        font.pixelSize: 11
+        visible: root.charging
+        anchors { left: cap.right; leftMargin: 2; verticalCenter: parent.verticalCenter }
+        text: "󱐋"
+        font.family: "JetBrainsMono Nerd Font"
+        font.pixelSize: 12
         color: root.state
     }
 }
