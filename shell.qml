@@ -35,6 +35,13 @@ ShellRoot {
         delegate: Osd {}
     }
 
+    // Notifications as they arrive. Claims org.freedesktop.Notifications, so
+    // only one daemon at a time — while the ags bar is up it owns the name.
+    Variants {
+        model: Quickshell.screens
+        delegate: NotificationPopup {}
+    }
+
     // Summoned from niri or wlr-which-key. One bind is enough — the menus are
     // tabs on one surface, so s/w/b crosses between them once you're in:
     //
