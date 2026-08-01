@@ -43,6 +43,20 @@ Menu {
         else if (delta < 0 && row.player.canGoPrevious) row.player.previous();
     }
 
+    // f focuses the player's window — you heard something and want to be
+    // there. Focusing is a departure, so the menu closes behind you.
+    handleKey: event => {
+        if (root.searching || event.key !== Qt.Key_F) return false;
+        const row = root.rows[root.selected];
+        if (row?.kind !== "player") return true;
+        const win = Svc.Media.windowFor(row.player);
+        if (win) {
+            Svc.Niri.focusWindow(win.id);
+            Svc.Menus.close();
+        }
+        return true;
+    }
+
     delegate: PlayerRow {
         required property var modelData
         required property int index

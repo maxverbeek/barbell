@@ -29,6 +29,10 @@ Singleton {
     // of view, pos_in_scrolling_layout is a [column, row] index. Ranking by
     // which field exists keeps on-screen windows ahead of the rest instead of
     // interleaving pixel offsets with column numbers.
+    function focusWindow(id) {
+        Quickshell.execDetached(["niri", "msg", "action", "focus-window", "--id", String(id)]);
+    }
+
     function windowsOn(workspaceId) {
         const rank = w => w.layout?.tile_pos_in_workspace_view ? 0 : (w.layout?.pos_in_scrolling_layout ? 1 : 2);
         const pos = w => w.layout?.tile_pos_in_workspace_view ?? w.layout?.pos_in_scrolling_layout ?? [0, 0];

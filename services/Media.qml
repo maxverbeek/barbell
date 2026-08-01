@@ -38,6 +38,27 @@ Singleton {
     // only technically playing. Nothing to say means nothing to show.
     readonly property bool active: player !== null && title !== ""
 
+    // The niri window a player lives in, for focusing it. MPRIS doesn't carry
+    // a window handle, so this is matching: desktopEntry against app_id gets
+    // the real apps, and for browsers — whose app_id says nothing about what's
+    // playing — the track title in the window title is the giveaway, since
+    // that's what they put there while something plays.
+    function windowFor(p) {
+        if (!p) return null;
+        const wins = Object.values(Niri.windows);
+        const entry = (p.desktopEntry || p.identity || "").toLowerCase();
+        if (entry !== "") {
+            const byApp = wins.find(w =>
+                (w.app_id ?? "").toLowerCase().startsWith(entry));
+            if (byApp) return byApp;
+        }
+        const title = p.trackTitle ?? "";
+        // Short titles match everything; require enough to mean something.
+        if (title.length >= 5)
+            return wins.find(w => (w.title ?? "").includes(title)) ?? null;
+        return null;
+    }
+
     function toggle() { if (player?.canTogglePlaying) player.togglePlaying(); }
     function next() { if (player?.canGoNext) player.next(); }
     function previous() { if (player?.canGoPrevious) player.previous(); }
