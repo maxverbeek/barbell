@@ -29,6 +29,12 @@ ShellRoot {
         delegate: BluetoothMenu {}
     }
 
+    // Volume feedback for changes that came from a key rather than a menu.
+    Variants {
+        model: Quickshell.screens
+        delegate: Osd {}
+    }
+
     // Summoned from niri or wlr-which-key. One bind is enough — the menus are
     // tabs on one surface, so s/w/b crosses between them once you're in:
     //

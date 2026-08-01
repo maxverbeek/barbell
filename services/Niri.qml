@@ -14,6 +14,14 @@ Singleton {
     // Window objects keyed by id.
     property var windows: ({})
 
+    // Which output has focus, by connector name — the active workspace's own
+    // output. "" until the first event arrives. Used by anything that should
+    // appear on one screen rather than all of them.
+    readonly property string focusedOutput: {
+        const ws = workspaces.find(w => w.is_focused) ?? workspaces.find(w => w.is_active);
+        return ws?.output ?? "";
+    }
+
     // Windows on a workspace, in the order they appear on screen.
     //
     // niri reports two position fields in different units:
