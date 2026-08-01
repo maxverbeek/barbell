@@ -27,6 +27,12 @@ PanelWindow {
 
             Workspaces { screenName: modelData.name }
 
+            // Two spacers so media sits in the true centre of the bar rather
+            // than wherever the widgets around it leave room.
+            Item { Layout.fillWidth: true }
+
+            MediaStatus { Layout.alignment: Qt.AlignVCenter }
+
             Item { Layout.fillWidth: true }
 
             // Exceptions and the always-drawn constants, in a fixed order.

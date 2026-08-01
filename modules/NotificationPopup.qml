@@ -30,11 +30,13 @@ PanelWindow {
     exclusiveZone: 0
 
     visible: items.length > 0
-    // Opposite corner from the bar's clock, and only as wide as the cards.
-    anchors { top: !Theme.bottom; bottom: Theme.bottom; right: true }
+    // Always top-right, wherever the bar happens to sit. Notifications live in
+    // the corner you aren't working in, and tying them to the bar's edge would
+    // put them under your hands whenever the bar is at the bottom. Only the
+    // margin knows about the bar, so they clear it when it's up there.
+    anchors { top: true; right: true }
     margins {
         top: Theme.bottom ? 12 : Theme.barHeight + 12
-        bottom: Theme.bottom ? Theme.barHeight + 12 : 12
         right: 12
     }
     implicitWidth: 380
@@ -203,9 +205,13 @@ PanelWindow {
                 // Each card times out on its own clock, so a burst doesn't all
                 // vanish at once and the one you're reading isn't cut short by
                 // an older one's timer.
+                //
+                // Stops once the notification is no longer tracked: an action
+                // or the sender can close it first, and firing then would reach
+                // for an object the server has already destroyed.
                 Timer {
                     id: expiry
-                    running: !card.critical && interval > 0
+                    running: !card.critical && interval > 0 && card.notif.tracked
                     interval: Svc.Notifications.timeoutFor(card.notif)
                     onTriggered: Svc.Notifications.expire(card.notif)
                 }

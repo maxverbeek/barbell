@@ -6,3 +6,4 @@ singleton Kube 1.0 Kube.qml
 singleton Menus 1.0 Menus.qml
 singleton Bluetooth 1.0 Bluetooth.qml
 singleton Notifications 1.0 Notifications.qml
+singleton Media 1.0 Media.qml

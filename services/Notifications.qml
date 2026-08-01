@@ -42,9 +42,19 @@ Singleton {
 
     function remove(n, byUser) {
         if (!n) return;
+        const had = active.indexOf(n) !== -1;
         active = active.filter(x => x !== n);
-        if (byUser) n.dismiss();
-        else n.expire();
+        // A notification can go away underneath us — an action invoked it, the
+        // sender closed it, the app quit — and calling dismiss/expire on the
+        // destroyed object throws. Only tell the server about ones we were
+        // still showing, and let the throw be non-fatal either way.
+        if (!had) return;
+        try {
+            if (byUser) n.dismiss();
+            else n.expire();
+        } catch (e) {
+            // Already closed on the server side; nothing left to tell it.
+        }
     }
 
     function dismissAll() {
