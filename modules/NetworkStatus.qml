@@ -21,7 +21,7 @@ Row {
     Text {
         visible: Network.vpnActive
         text: "󰦝"
-        font { family: Theme.iconFont; pixelSize: 14 }
+        font { family: Theme.iconFont; pixelSize: 15 }
         color: Theme.good
         anchors.verticalCenter: parent.verticalCenter
     }
@@ -34,7 +34,7 @@ Row {
             : Network.signal >= 0.5 ? "󰤥"
             : Network.signal >= 0.25 ? "󰤢"
             : "󰤟"
-        font { family: Theme.iconFont; pixelSize: 14 }
+        font { family: Theme.iconFont; pixelSize: 15 }
         // Off is a choice; disconnected-but-on is a problem.
         color: !Network.wifiEnabled ? Theme.off
             : (Network.wifiConnected || Network.wired) ? Theme.fg
@@ -51,7 +51,7 @@ Row {
             : full.length > 18 ? full.slice(0, 18) + "…"
             : full
         color: Theme.fgDim
-        font { family: Theme.font; pixelSize: 12 }
+        font { family: Theme.font; pixelSize: 13 }
         anchors.verticalCenter: parent.verticalCenter
     }
 }

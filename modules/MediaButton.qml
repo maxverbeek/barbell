@@ -28,7 +28,7 @@ Item {
     Text {
         anchors.centerIn: parent
         text: root.glyph
-        font { family: Theme.iconFont; pixelSize: 14 }
+        font { family: Theme.iconFont; pixelSize: 15 }
         color: !root.enabled ? Theme.fgFaint
             : root.hovered ? Theme.fg
             : Theme.fgDim

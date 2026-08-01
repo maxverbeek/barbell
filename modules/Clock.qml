@@ -13,14 +13,14 @@ Row {
     Text {
         text: Qt.formatDateTime(clock.date, "ddd d MMM •")
         color: Theme.fgDim
-        font { family: Theme.font; pixelSize: 13 }
+        font { family: Theme.font; pixelSize: 14 }
         anchors.verticalCenter: parent.verticalCenter
     }
 
     Text {
         text: Qt.formatDateTime(clock.date, "HH:mm")
         color: Theme.fg
-        font { family: Theme.font; pixelSize: 13; weight: Font.DemiBold }
+        font { family: Theme.font; pixelSize: 14; weight: Font.DemiBold }
         anchors.verticalCenter: parent.verticalCenter
     }
 }

@@ -26,7 +26,7 @@ Row {
         color: Kube.production ? Theme.bad : Theme.fgDim
         font {
             family: Theme.font
-            pixelSize: 12
+            pixelSize: 13
             weight: Kube.production ? Font.DemiBold : Font.Normal
         }
         anchors.verticalCenter: parent.verticalCenter

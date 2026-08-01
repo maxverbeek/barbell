@@ -26,7 +26,7 @@ Item {
     Text {
         id: icon
         text: "󰂯"
-        font { family: Theme.iconFont; pixelSize: 14 }
+        font { family: Theme.iconFont; pixelSize: 15 }
         color: root.disabled ? Theme.off
             : root.busy ? Theme.warn
             : Theme.accent

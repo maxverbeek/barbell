@@ -78,7 +78,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: root.percent
-            font { family: Theme.font; pixelSize: 9; weight: Font.Bold }
+            font { family: Theme.font; pixelSize: 10; weight: Font.Bold }
             color: root.digits
         }
     }

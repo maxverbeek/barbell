@@ -43,7 +43,7 @@ Item {
 
         Text {
             text: "✳"
-            font { family: Theme.font; pixelSize: 12 }
+            font { family: Theme.font; pixelSize: 13 }
             color: label.color
             anchors.verticalCenter: parent.verticalCenter
         }
@@ -53,7 +53,7 @@ Item {
             // The arrow marks "burning too fast" as distinct from "nearly
             // full" — a low number in warn colour needs the why.
             text: `${Math.round(root.risk.used)}%${root.onPace ? "↗" : ""}`
-            font { family: Theme.font; pixelSize: 12 }
+            font { family: Theme.font; pixelSize: 13 }
             color: Svc.ClaudeUsage.stale ? Theme.off
                 : root.risk.used >= 90 || root.risk.projected >= 150 ? Theme.bad
                 : Theme.warn

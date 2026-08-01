@@ -51,7 +51,7 @@ Item {
         Text {
             visible: Svc.Media.art === ""
             text: "󰎈"
-            font { family: Theme.iconFont; pixelSize: 13 }
+            font { family: Theme.iconFont; pixelSize: 14 }
             color: Theme.fgDim
             Layout.alignment: Qt.AlignVCenter
         }
@@ -67,7 +67,7 @@ Item {
             color: root.hovered ? Theme.fg
                 : Svc.Media.playing ? Theme.fgDim
                 : Theme.fgFaint
-            font { family: Theme.font; pixelSize: 12 }
+            font { family: Theme.font; pixelSize: 13 }
             elide: Text.ElideRight
             Layout.maximumWidth: 260
             Layout.alignment: Qt.AlignVCenter

@@ -14,7 +14,7 @@ Row {
     Text {
         visible: Audio.micInUse || Audio.micMuted
         text: Audio.micMuted ? "󰍭" : "󰍬"
-        font { family: Theme.iconFont; pixelSize: 15 }
+        font { family: Theme.iconFont; pixelSize: 16 }
         color: Audio.micMuted
             ? (Audio.micInUse ? Theme.bad : Theme.warn)  // in-use+muted is the mistake
             : Theme.good
@@ -33,7 +33,7 @@ Row {
 
     Text {
         text: Audio.sinkMuted ? "󰝟" : "󰕾"
-        font { family: Theme.iconFont; pixelSize: 15 }
+        font { family: Theme.iconFont; pixelSize: 16 }
         color: Audio.sinkMuted ? Theme.bad
             : Audio.sinkIsBluetooth ? Theme.accent
             : Theme.fg

@@ -34,7 +34,7 @@ RowLayout {
                     text: modelData.idx
                     color: modelData.is_urgent ? Theme.bad : (modelData.is_active ? Theme.fg : Theme.fgDim)
                     font.family: Theme.font
-                    font.pixelSize: 12
+                    font.pixelSize: 13
                 }
 
                 Repeater {
