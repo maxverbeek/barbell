@@ -39,15 +39,13 @@ Row {
             : Theme.fg
         anchors.verticalCenter: parent.verticalCenter
 
+        // Only the gestures a plain click can't express. Opening the menu is the
+        // island's job now — left-click is deliberately not handled here so it
+        // falls through and one target covers the whole group.
         MouseArea {
             anchors.fill: parent
-            anchors.margins: -4          // a 15px glyph is a small target
-            hoverEnabled: true
-            acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-            onClicked: mouse => {
-                if (mouse.button === Qt.MiddleButton) Audio.toggleSinkMute();
-                else Menus.toggle("audio");
-            }
+            acceptedButtons: Qt.MiddleButton
+            onClicked: Audio.toggleSinkMute()
             onWheel: wheel => Audio.setSinkVolume(
                 Audio.sinkVolume + (wheel.angleDelta.y > 0 ? 0.05 : -0.05))
         }

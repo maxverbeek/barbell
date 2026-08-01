@@ -38,11 +38,8 @@ PanelWindow {
             // Exceptions and the always-drawn constants, in a fixed order.
             KubeContext { Layout.alignment: Qt.AlignVCenter }
 
-            NetworkStatus {}
-
-            BluetoothStatus { Layout.alignment: Qt.AlignVCenter }
-
-            AudioStatus {}
+            // Network, bluetooth and audio as one button into the menus.
+            Island { Layout.alignment: Qt.AlignVCenter }
 
             Battery {
                 // No battery on a desktop, and displayDevice is briefly null at startup.

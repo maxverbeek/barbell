@@ -42,11 +42,4 @@ Item {
         }
         onVisibleChanged: if (!visible) opacity = 1
     }
-
-    MouseArea {
-        anchors.fill: parent
-        anchors.margins: -4
-        hoverEnabled: true
-        onClicked: Svc.Menus.toggle("bluetooth")
-    }
 }
