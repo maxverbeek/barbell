@@ -30,6 +30,8 @@ PanelWindow {
             Item { Layout.fillWidth: true }
 
             // Exceptions and the always-drawn constants, in a fixed order.
+            NetworkStatus {}
+
             AudioStatus {}
 
             Battery {

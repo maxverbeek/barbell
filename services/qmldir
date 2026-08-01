@@ -1,3 +1,4 @@
 singleton Niri 1.0 Niri.qml
 singleton Icons 1.0 Icons.qml
 singleton Audio 1.0 Audio.qml
+singleton Network 1.0 Network.qml
