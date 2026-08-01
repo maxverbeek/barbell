@@ -14,15 +14,28 @@ Item {
     property int percent: 76
     property bool charging: false
 
-    // Colour of the charged portion. Thresholds are the tuning knob.
-    readonly property color level: charging ? Theme.good
-        : percent <= 10 ? Theme.bad
-        : percent <= 25 ? Theme.warn
-        : Theme.fg
+    // Colour of the charged portion. Thresholds are the tuning knob. These are
+    // the palette's darker siblings of good/bad/warn — the light digits sit on
+    // top of the fill, so the fill has to stay out of their luminance range.
+    //
+    // The normal fill is lifted above islandActive: the fill must be BRIGHTER
+    // than the rest or the pill reads inverted — a brain sees bright as full,
+    // and waveBlue2 against sumiInk4 had it exactly backwards.
+    readonly property color level: charging ? Theme.autumnGreen
+        : percent <= 10 ? Theme.autumnRed
+        : percent <= 25 ? Theme.boatYellow2
+        : Qt.lighter(Theme.islandActive, 1.45)
 
-    // The remainder. Light enough to read as "the rest of the battery" rather
-    // than a hole in it.
-    readonly property color rest: Theme.sumiInk4
+    // The remainder, kept well below the fill so the divide is a real step in
+    // luminance rather than a hue hint — that step is the analog readout.
+    readonly property color rest: Theme.sumiInk3
+
+    // Low charge is the digits' problem too: the coloured fill is a sliver
+    // hiding behind them exactly when it matters, so the number itself takes
+    // the urgency colour.
+    readonly property color digits: charging || percent > 25 ? Theme.fg
+        : percent <= 10 ? Theme.bad
+        : Theme.warn
 
     implicitWidth: charging ? bolt.x + bolt.width : body.width + 2.5
     implicitHeight: 14
@@ -59,33 +72,14 @@ Item {
             }
         }
 
-        // Drawn twice, each copy clipped to one side of the boundary: dark over
-        // the charged part, light over the rest. A single Text can't do it —
-        // around 50% the boundary runs through the digits and half of them
-        // disappear whichever colour you pick.
-        Repeater {
-            model: 2
-            delegate: Item {
-                required property int index
-                anchors.fill: parent
-
-                Item {
-                    x: index === 0 ? 0 : body.fillWidth
-                    width: index === 0 ? body.fillWidth : parent.width - body.fillWidth
-                    height: parent.height
-                    clip: true
-
-                    Text {
-                        // Laid out against the body rather than this clip window,
-                        // so both copies land in exactly the same place.
-                        x: body.width / 2 - width / 2 - parent.x
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.percent
-                        font { family: Theme.font; pixelSize: 9; weight: Font.Bold }
-                        color: index === 0 ? Theme.bg0 : Theme.fg
-                    }
-                }
-            }
+        // One light Text is enough: both the fill and the remainder are dark,
+        // so the boundary can run straight through the digits without eating
+        // half of them.
+        Text {
+            anchors.centerIn: parent
+            text: root.percent
+            font { family: Theme.font; pixelSize: 9; weight: Font.Bold }
+            color: root.digits
         }
     }
 
