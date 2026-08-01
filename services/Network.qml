@@ -76,7 +76,10 @@ Singleton {
     property var tunnels: []
 
     readonly property var activeTunnels: tunnels.filter(t => t.active)
-    readonly property bool vpnActive: activeTunnels.length > 0
+    // Tailscale doesn't count towards the bar icon: it's on by default, and an
+    // indicator for the permanent state of affairs indicates nothing. It still
+    // lives in the menu, where turning it off is the point.
+    readonly property bool vpnActive: activeTunnels.some(t => !isTailscale(t))
     // The bar shows one name. Prefer a real tunnel over tailscale, which is up
     // almost always and so says the least about what's going on.
     readonly property string vpnName: {
