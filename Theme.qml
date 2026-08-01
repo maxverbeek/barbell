@@ -45,15 +45,20 @@ Singleton {
     readonly property color islandHover: sumiInk3
     readonly property color islandActive: waveBlue2
 
-    readonly property color fg: fujiWhite
-    readonly property color fgDim: oldWhite
-    readonly property color fgFaint: fujiGray
+    // Text is Catppuccin Mocha, not Kanagawa. fujiWhite is a warm cream that
+    // reads yellow next to the cool near-white the old bar used, and eyes
+    // calibrated by years of #cdd6f4 see "off", not "warm". Backgrounds and
+    // accents stay Kanagawa — the two darks are near-identical, so the seam
+    // doesn't show.
+    readonly property color fg: "#cdd6f4"
+    readonly property color fgDim: "#a6adc8"
+    readonly property color fgFaint: "#6c7086"
 
     readonly property color accent: crystalBlue   // focus, interaction, bluetooth
     readonly property color good: springGreen     // active and working
     readonly property color warn: carpYellow      // wants attention
     readonly property color bad: peachRed         // changed or critical
-    readonly property color off: fujiGray         // you turned it off
+    readonly property color off: "#6c7086"        // you turned it off — cool, like the text
 
     readonly property string font: "Inter"
     readonly property string iconFont: "JetBrainsMono Nerd Font"
