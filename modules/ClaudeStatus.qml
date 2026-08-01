@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
 import ".."
@@ -91,33 +92,46 @@ Item {
             color: Theme.menuBg
             border { width: 1; color: Theme.sumiInk3 }
 
-            Column {
+            ColumnLayout {
                 id: tip
                 anchors.centerIn: parent
                 spacing: 3
 
-                Repeater {
-                    model: Svc.ClaudeUsage.windows
+                // Real columns rather than one string per line, so the
+                // percents and countdowns line up across buckets. No
+                // projection number here — the pace maths lives in the colour
+                // and the bar's ↗; a second percentage next to the first read
+                // as noise, not information.
+                GridLayout {
+                    columns: 3
+                    rowSpacing: 3
+                    columnSpacing: 12
 
-                    delegate: Text {
-                        required property var modelData
-                        text: {
-                            // "five_hour" -> "5h", "seven_day" -> "7d"; anything
-                            // new shows its raw key rather than hiding.
-                            const names = { five_hour: "5h", seven_day: "7d" };
-                            const name = names[modelData.key] ?? modelData.key;
-                            const reset = Svc.ClaudeUsage.untilReset(modelData.resetsAt);
-                            // The projection only earns a mention when it says
-                            // something the level doesn't.
-                            const proj = modelData.projected >= modelData.used + 5
-                                ? `  →${Math.min(999, Math.round(modelData.projected))}%`
-                                : "";
-                            return `${name}  ${Math.round(modelData.used)}%${proj}  ·  resets in ${reset}`;
+                    Repeater {
+                        // One bucket = three cells, and a Repeater makes one
+                        // delegate per item — so the model is cells, and each
+                        // finds its bucket by division. The grid fills row by
+                        // row, keeping every bucket on its own line.
+                        model: Svc.ClaudeUsage.windows.length * 3
+
+                        delegate: Text {
+                            required property int index
+                            readonly property var modelData:
+                                Svc.ClaudeUsage.windows[Math.floor(index / 3)]
+                            readonly property int cell: index % 3
+                            readonly property color tone:
+                                modelData.used >= 90 || modelData.projected >= 150 ? Theme.bad
+                                : modelData.used >= 70 || modelData.projected >= 100 ? Theme.warn
+                                : Theme.fg
+
+                            text: cell === 0 ? Svc.ClaudeUsage.bucketName(modelData.key)
+                                : cell === 1 ? `${Math.round(modelData.used)}%`
+                                : `resets in ${Svc.ClaudeUsage.untilReset(modelData.resetsAt)}`
+                            color: cell === 2 ? Theme.fgDim : tone
+                            horizontalAlignment: cell === 1 ? Text.AlignRight : Text.AlignLeft
+                            Layout.fillWidth: cell === 1
+                            font { family: Theme.font; pixelSize: 11 }
                         }
-                        color: modelData.used >= 90 || modelData.projected >= 150 ? Theme.bad
-                            : modelData.used >= 70 || modelData.projected >= 100 ? Theme.warn
-                            : Theme.fg
-                        font { family: Theme.font; pixelSize: 11 }
                     }
                 }
 
