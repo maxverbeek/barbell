@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Widgets
 import ".."
 import "../services" as Svc
 
@@ -41,10 +42,13 @@ Item {
         spacing: 5
         anchors.verticalCenter: parent.verticalCenter
 
-        Text {
-            text: "✳"
-            font { family: Theme.font; pixelSize: 13 }
-            color: label.color
+        // The real mark, not a ✳ stand-in. It brings its own orange, so the
+        // number alone carries warn/bad — fading the icon is reserved for
+        // stale, where everything should look switched off.
+        IconImage {
+            source: Svc.Icons.resolve("claude-code")
+            implicitSize: 14
+            opacity: Svc.ClaudeUsage.stale ? 0.4 : 1
             anchors.verticalCenter: parent.verticalCenter
         }
 
