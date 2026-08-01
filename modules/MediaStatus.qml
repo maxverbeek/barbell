@@ -30,6 +30,13 @@ Item {
         anchors.centerIn: parent
         spacing: 8
 
+        // Ghost of the transport controls, same width, on the mirror side. The
+        // controls reserve their space even when invisible (see below), which
+        // pushed the title left of the bar's true centre — visibly off, since
+        // this widget's whole job is to sit in the middle. Balancing the row
+        // instead of shifting it keeps the no-move-on-hover invariant intact.
+        Item { Layout.preferredWidth: transport.implicitWidth; implicitHeight: 1 }
+
         // Album art when the player offers it, a note when it doesn't. Rounded
         // so a square cover doesn't fight the rest of the bar.
         ClippingRectangle {
