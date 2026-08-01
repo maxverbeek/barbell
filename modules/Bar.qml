@@ -36,6 +36,8 @@ PanelWindow {
             Item { Layout.fillWidth: true }
 
             // Exceptions and the always-drawn constants, in a fixed order.
+            ClaudeStatus { Layout.alignment: Qt.AlignVCenter }
+
             KubeContext { Layout.alignment: Qt.AlignVCenter }
 
             // Network, bluetooth and audio as one button into the menus.
