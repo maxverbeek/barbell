@@ -10,10 +10,7 @@ Item {
 
     property string glyph: ""
     property bool enabled: true
-    // Set false while the row is faded out: the buttons keep their space so
-    // the layout doesn't move, so they have to stop taking clicks themselves.
-    property bool active: true
-    readonly property bool hovered: area.containsMouse && active
+    readonly property bool hovered: area.containsMouse
 
     signal triggered()
 
@@ -41,7 +38,12 @@ Item {
         id: area
         anchors.fill: parent
         hoverEnabled: true
-        enabled: root.enabled && root.active
+        // Hover stays live even while the row is faded out: the buttons always
+        // occupy their space, and a pointer resting on an invisible one is what
+        // holds the row open — disabling them made the hover flip-flop instead.
+        // Clicks are the part that's gated, and a dead button declines them so
+        // they fall through to the widget behind and raise the player.
+        acceptedButtons: root.enabled ? Qt.LeftButton : Qt.NoButton
         onClicked: root.triggered()
     }
 }

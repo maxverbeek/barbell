@@ -17,9 +17,13 @@ Item {
     implicitWidth: visible ? row.implicitWidth : 0
     implicitHeight: 22
 
-    // One MouseArea over the whole widget decides this, buttons included — it
-    // sits behind them so they take their own clicks while it keeps the hover.
-    readonly property bool hovered: area.containsMouse
+    // A hoverEnabled MouseArea swallows hover rather than passing it down, so
+    // the buttons' own areas have to count too: once they enable, the pointer
+    // sitting on one no longer reaches `area` at all. Reading only `area` made
+    // the buttons fade in, steal the hover, fade out, and hand it back — an
+    // oscillation you could see as a half-hovered flicker over the controls.
+    readonly property bool hovered:
+        area.containsMouse || prev.hovered || play.hovered || next.hovered
 
     RowLayout {
         id: row
@@ -58,7 +62,11 @@ Item {
             text: Svc.Media.artist !== ""
                 ? `${Svc.Media.artist} — ${Svc.Media.title}`
                 : Svc.Media.title
-            color: root.hovered ? Theme.fg : Theme.fgDim
+            // Paused sits back a shade, so a stopped track doesn't read the same
+            // as one that's playing when you're only glancing at the bar.
+            color: root.hovered ? Theme.fg
+                : Svc.Media.playing ? Theme.fgDim
+                : Theme.fgFaint
             font { family: Theme.font; pixelSize: 12 }
             elide: Text.ElideRight
             Layout.maximumWidth: 260
@@ -80,7 +88,6 @@ Item {
 
             MediaButton {
                 id: prev
-                active: root.hovered
                 glyph: "󰒮"
                 enabled: Svc.Media.player?.canGoPrevious ?? false
                 onTriggered: Svc.Media.previous()
@@ -88,14 +95,12 @@ Item {
 
             MediaButton {
                 id: play
-                active: root.hovered
                 glyph: Svc.Media.playing ? "󰏤" : "󰐊"
                 onTriggered: Svc.Media.toggle()
             }
 
             MediaButton {
                 id: next
-                active: root.hovered
                 glyph: "󰒭"
                 enabled: Svc.Media.player?.canGoNext ?? false
                 onTriggered: Svc.Media.next()

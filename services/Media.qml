@@ -23,9 +23,15 @@ Singleton {
     readonly property string art: player?.trackArtUrl ?? ""
     readonly property string app: player?.identity ?? ""
 
-    // Some players report a title and nothing else; some report neither and
-    // are only technically playing. Nothing to say means nothing to show.
-    readonly property bool active: playing && title !== ""
+    // Paused still counts. Requiring `playing` here meant hitting pause deleted
+    // the widget out from under the pointer that pressed it, with no way back
+    // short of finding the app — and a paused track is still worth a glance.
+    // `player` already prefers a playing source, so this can't let a paused
+    // player elbow out one that's actually going.
+    //
+    // Some players report a title and nothing else; some report neither and are
+    // only technically playing. Nothing to say means nothing to show.
+    readonly property bool active: player !== null && title !== ""
 
     function toggle() { if (player?.canTogglePlaying) player.togglePlaying(); }
     function next() { if (player?.canGoNext) player.next(); }
