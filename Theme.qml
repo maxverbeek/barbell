@@ -8,7 +8,7 @@ import Quickshell
 // kanagawa-nvim.nix (passthru.colors.term). Mirrored here by hand; if the bar
 // is ever built through that flake, generate this file from it instead.
 Singleton {
-    readonly property int barHeight: 32
+    readonly property int barHeight: 34
     // Sit at the bottom while ags still owns the top edge.
     readonly property bool bottom: true
 
