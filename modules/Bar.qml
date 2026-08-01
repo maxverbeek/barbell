@@ -36,6 +36,8 @@ PanelWindow {
             Item { Layout.fillWidth: true }
 
             // Exceptions and the always-drawn constants, in a fixed order.
+            SysStatus { Layout.alignment: Qt.AlignVCenter }
+
             ClaudeStatus { Layout.alignment: Qt.AlignVCenter }
 
             KubeContext { Layout.alignment: Qt.AlignVCenter }

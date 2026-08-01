@@ -32,13 +32,13 @@ PanelWindow {
     visible: items.length > 0
     // Always top-right, wherever the bar happens to sit. Notifications live in
     // the corner you aren't working in, and tying them to the bar's edge would
-    // put them under your hands whenever the bar is at the bottom. Only the
-    // margin knows about the bar, so they clear it when it's up there.
+    // put them under your hands whenever the bar is at the bottom.
+    //
+    // The margin is only the gap. The bar claims its height as an exclusive
+    // zone, so the compositor already places this surface clear of it —
+    // adding barHeight here too pushed it a second 34px down.
     anchors { top: true; right: true }
-    margins {
-        top: Theme.bottom ? 12 : Theme.barHeight + 12
-        right: 12
-    }
+    margins { top: 12; right: 12 }
     implicitWidth: 380
     implicitHeight: Math.max(1, stack.implicitHeight)
     color: "transparent"

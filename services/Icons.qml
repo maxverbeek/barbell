@@ -10,10 +10,9 @@ Singleton {
 
     readonly property string fallback: "application-x-executable"
 
-    // A handful of icons no theme here ships (zen-browser, neovim, kubernetes,
-    // …). Same directory ags reads them from.
-    readonly property string customDir: `${Quickshell.env("HOME")}/.config/ags/icons`
-    readonly property var customIcons: ["circle-dashed", "dot", "kubernetes", "memory-stick-symbolic", "neovim", "processor-symbolic", "zen-browser"]
+    // Icons no theme here ships, bundled so they come from the store path
+    // rather than anything in $HOME. Claude's are the spinner frames below.
+    readonly property var customIcons: ["kubernetes", "neovim", "zen-browser", "claude-code", "claude-spinner-0", "claude-spinner-1", "claude-spinner-2", "claude-spinner-3", "claude-spinner-4", "claude-spinner-5"]
 
     // Terminal apps all share one app_id, so the title is the only clue.
     readonly property var titleRules: [
@@ -22,12 +21,9 @@ Singleton {
     ]
 
     // Claude Code prefixes the terminal title with a braille glyph while it is
-    // working and with ✳ when it wants input. The title is the only marker —
-    // there is no app_id to match on.
-    readonly property var claudeIcons: ["claude-code", "claude-spinner-0", "claude-spinner-1", "claude-spinner-2", "claude-spinner-3", "claude-spinner-4", "claude-spinner-5"]
-
-    // Claude renders its spinner as a braille glyph that it updates in place, so
-    // the leading character of the title is what says "still working".
+    // working and with ✳ when it wants input — the title is the only marker,
+    // there is no app_id to match on. It updates the glyph in place, so the
+    // leading character is what says "still working".
     readonly property var thinkingPattern: /^[⠀-⣿]/
 
     // One timer for the whole bar rather than one per window, and it only ticks
@@ -70,9 +66,7 @@ Singleton {
     }
 
     function custom(name) {
-        if (claudeIcons.includes(name))
-            return Qt.resolvedUrl(`../icons/${name}.svg`);
-        return customIcons.includes(name) ? `file://${customDir}/${name}.svg` : "";
+        return customIcons.includes(name) ? Qt.resolvedUrl(`../icons/${name}.svg`) : "";
     }
 
     function resolve(name) {

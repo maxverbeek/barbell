@@ -51,6 +51,10 @@ RowLayout {
                         Image {
                             anchors.fill: parent
                             source: Icons.forWindow(modelData)
+                            // Not every icon is square — neovim.svg is 602x734
+                            // — and stretching one to a 15x15 box renders it
+                            // taller and heavier than its square neighbours.
+                            fillMode: Image.PreserveAspectFit
                             sourceSize: Qt.size(15, 15)
                             opacity: modelData.is_focused ? 1.0 : 0.5
                         }
