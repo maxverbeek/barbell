@@ -27,6 +27,7 @@ Item {
     readonly property real level: isSource ? Audio.micVolume : Audio.sinkVolume
     readonly property bool muted: isSource ? Audio.micMuted : Audio.sinkMuted
 
+
     // Drag target. Setting a level explicitly rather than nudging, so the
     // pointer position is the value.
     function setFraction(f) {

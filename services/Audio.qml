@@ -38,12 +38,17 @@ Singleton {
     // exposed here. So rather than filter them out, sink them: headphones and
     // speakers first, dead display ports last. The list stays honest — every
     // device is still reachable — but the top of it is the useful part.
+    //
+    // Deliberately NOT ranking the active device first. Doing that makes the
+    // order depend on the selection, so choosing a device reorders the list,
+    // which rebuilds every row in the menu — and a rebuilt slider animates up
+    // from zero. The checkmark is what marks the current one; the order stays
+    // put so the menu doesn't rearrange itself under the pointer.
     function rank(node) {
-        if (node === sink || node === source) return 0;      // current, always first
         const api = node?.properties?.["device.api"] ?? "";
-        if (api === "bluez5") return 1;                      // headphones you just paired
-        if (/hdmi|displayport/i.test(label(node))) return 3;  // usually nothing attached
-        return 2;
+        if (api === "bluez5") return 0;                       // headphones you just paired
+        if (/hdmi|displayport/i.test(label(node))) return 2;  // usually nothing attached
+        return 1;
     }
 
     function byLikelihood(a, b) {
