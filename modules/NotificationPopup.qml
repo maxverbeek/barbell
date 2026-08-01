@@ -89,10 +89,21 @@ PanelWindow {
                     // that send neither get nothing rather than a placeholder.
                     IconImage {
                         visible: source !== ""
-                        source: card.notif.image !== "" ? card.notif.image
-                            : card.notif.appIcon !== ""
-                                ? Svc.Icons.resolve(card.notif.appIcon)
-                            : ""
+                        source: {
+                            const img = card.notif.image;
+                            // notify-send --icon=NAME arrives here as
+                            // image://icon/NAME, and that provider only knows
+                            // the icon theme — a bundled name like claude-code
+                            // renders as the missing-image checkerboard. Unwrap
+                            // it and resolve ourselves, customs included; a
+                            // name nobody knows shows nothing, not a grid.
+                            if (img.startsWith("image://icon/"))
+                                return Svc.Icons.resolve(img.slice(13));
+                            if (img !== "")
+                                return img;
+                            return card.notif.appIcon !== ""
+                                ? Svc.Icons.resolve(card.notif.appIcon) : "";
+                        }
                         implicitSize: 32
                         Layout.alignment: Qt.AlignTop
                     }
