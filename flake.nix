@@ -25,11 +25,11 @@
       });
 
       packages = forAllSystems (pkgs: {
-        # `barbarella` runs the bar; `barbarella ipc ...` talks to it. The ipc
+        # `barbell` runs the bar; `barbell ipc ...` talks to it. The ipc
         # subcommand exists because quickshell addresses instances by config
         # path, and the store path changes every rebuild — nothing outside this
         # wrapper should ever need to know it.
-        default = pkgs.writeShellScriptBin "barbarella" ''
+        default = pkgs.writeShellScriptBin "barbell" ''
           export QT_QPA_PLATFORMTHEME=gtk3
           if [ "$1" = "ipc" ]; then
             shift
