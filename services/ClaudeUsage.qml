@@ -82,7 +82,7 @@ Singleton {
         running: true
         repeat: true
         triggeredOnStart: true
-        onTriggered: fetch.running = true
+        onTriggered: root.refresh()
     }
 
     Process {
@@ -103,7 +103,13 @@ Singleton {
 
     function ingestApi(raw) {
         try {
-            const limits = JSON.parse(raw)?.limits ?? [];
+            const limits = JSON.parse(raw)?.limits;
+            // An error response is valid JSON too — a 429 body parses fine and
+            // has no limits array. Treating it as data replaced the scoped
+            // buckets with nothing and stamped the nothing as fresh; only a
+            // real limits array counts, anything else keeps what we had and
+            // lets the freshness window retire it honestly.
+            if (!Array.isArray(limits)) return;
             scoped = limits
                 .filter(l => l.scope)
                 .map(l => ({
@@ -113,8 +119,7 @@ Singleton {
                 }));
             apiSeen = Date.now();
         } catch (e) {
-            // Failed fetch or changed shape: keep what we had; the freshness
-            // window in `windows` retires it if this keeps happening.
+            // Failed fetch or changed shape: keep what we had.
         }
     }
 
@@ -148,8 +153,15 @@ Singleton {
     }
 
     // The claude menu calls this on open, so a peek shows now rather than the
-    // last five-minute poll.
-    function refresh() { fetch.running = true; }
+    // last five-minute poll. Throttled: the usage endpoint 429s under
+    // enthusiasm (a day of bar restarts and menu opens earned a block), and a
+    // menu reopened three times in a minute doesn't need three fetches.
+    property double lastAttempt: 0
+    function refresh() {
+        if (Date.now() - lastAttempt < 60000) return;
+        lastAttempt = Date.now();
+        fetch.running = true;
+    }
 
     // Rounded to whole minutes; a to-the-second countdown on a quota is noise.
     function untilReset(epochMs) {
