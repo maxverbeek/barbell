@@ -77,6 +77,10 @@ Item {
         // half of them.
         Text {
             anchors.centerIn: parent
+            // centerIn centres the font's bounding box, and digits have no
+            // descenders — the descent hangs as empty space below them and the
+            // number rides visibly high in a pill this small.
+            anchors.verticalCenterOffset: 1
             text: root.percent
             font { family: Theme.font; pixelSize: 10; weight: Font.Bold }
             color: root.digits
