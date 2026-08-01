@@ -27,6 +27,14 @@ Item {
     readonly property real level: isSource ? Audio.micVolume : Audio.sinkVolume
     readonly property bool muted: isSource ? Audio.micMuted : Audio.sinkMuted
 
+    // Drag target. Setting a level explicitly rather than nudging, so the
+    // pointer position is the value.
+    function setFraction(f) {
+        const v = Math.max(0, Math.min(1, f));
+        if (isSource) Audio.setMicVolume(v);
+        else Audio.setSinkVolume(v);
+    }
+
     implicitHeight: (heading !== "" ? label.implicitHeight + 8 : 0) + 28
 
     Text {
@@ -77,20 +85,61 @@ Item {
                 Layout.fillWidth: true
             }
 
-            Rectangle {
+            // The grab area is the full row height, not the 4px bar — a hairline
+            // is a miserable drag target. The bar is drawn inside it.
+            Item {
+                id: slider
                 visible: root.isVolume
                 Layout.fillWidth: true
-                Layout.preferredHeight: 4
-                Layout.alignment: Qt.AlignVCenter
-                radius: 2
-                color: Theme.sumiInk4
+                Layout.fillHeight: true
+
+                readonly property real fraction:
+                    Math.max(0, Math.min(1, root.level))
 
                 Rectangle {
-                    width: parent.width * Math.max(0, Math.min(1, root.level))
-                    height: parent.height
-                    radius: parent.radius
+                    id: track
+                    anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
+                    height: 4
+                    radius: 2
+                    color: Theme.sumiInk4
+
+                    Rectangle {
+                        width: track.width * slider.fraction
+                        height: parent.height
+                        radius: parent.radius
+                        color: root.muted ? Theme.bad : Theme.accent
+                        // The animation is for keyboard nudges and external
+                        // changes; during a drag it would lag the pointer, so
+                        // it's off while the grab is live.
+                        Behavior on width {
+                            enabled: !drag.pressed
+                            NumberAnimation { duration: 90 }
+                        }
+                    }
+                }
+
+                // Only while dragging, so a static menu stays clean.
+                Rectangle {
+                    visible: drag.pressed
+                    width: 10
+                    height: 10
+                    radius: 5
                     color: root.muted ? Theme.bad : Theme.accent
-                    Behavior on width { NumberAnimation { duration: 90 } }
+                    x: track.width * slider.fraction - width / 2
+                    anchors.verticalCenter: track.verticalCenter
+                }
+
+                MouseArea {
+                    id: drag
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    // Jump to where you pressed, then track the pointer. Keeping
+                    // the press and the move on one handler means a click and a
+                    // drag are the same gesture.
+                    onPressed: mouse => { root.hovered(); root.setFraction(mouse.x / width); }
+                    onPositionChanged: mouse => { if (pressed) root.setFraction(mouse.x / width); }
+                    onEntered: root.hovered()
+                    onWheel: wheel => root.scrolled(wheel.angleDelta.y > 0 ? 0.05 : -0.05)
                 }
             }
 
@@ -104,8 +153,11 @@ Item {
             }
         }
 
+        // Sits behind the slider's own handler, so on a volume row this only
+        // catches the icon and the readout; the drag area takes the middle.
         MouseArea {
             anchors.fill: parent
+            z: -1
             hoverEnabled: true
             onEntered: root.hovered()
             onClicked: root.clicked()
