@@ -29,8 +29,13 @@ Item {
     // "over pace" and the widget would cry wolf over 4%.
     readonly property bool onPace: risk.used >= 20 && risk.projected >= 100
 
+    // No session, no warning: quota only matters while something is spending
+    // it, and the c menu still answers on demand when nothing is.
+    readonly property bool sessionOpen:
+        Object.values(Svc.Niri.windows).some(w => Svc.Icons.isClaude(w))
+
     readonly property bool interesting:
-        Svc.ClaudeUsage.known && (risk.used >= 70 || onPace)
+        sessionOpen && Svc.ClaudeUsage.known && (risk.used >= 70 || onPace)
 
     visible: interesting
     implicitWidth: visible ? row.implicitWidth : 0

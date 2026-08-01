@@ -52,6 +52,13 @@ Singleton {
         onRunningChanged: if (!running) frame = 0
     }
 
+    // Whether this window is a Claude Code session at all — working or
+    // waiting. The title markers are the only signal there is.
+    function isClaude(window) {
+        const title = window?.title ?? "";
+        return thinkingPattern.test(title) || title.startsWith("✳");
+    }
+
     function claudeIcon(window) {
         const title = window?.title ?? "";
         if (thinkingPattern.test(title))
