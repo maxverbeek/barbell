@@ -19,7 +19,7 @@ Singleton {
     // How long each urgency stays up. Critical never expires on its own —
     // something that says it's critical has earned a deliberate dismissal.
     readonly property int lowTimeout: 4000
-    readonly property int normalTimeout: 6000
+    readonly property int normalTimeout: 5000
 
     // More than this and they're a wall rather than information. Oldest go
     // first, since the newest is what just happened.
