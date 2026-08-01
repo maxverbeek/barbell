@@ -215,6 +215,7 @@ PanelWindow {
             // spends m on mute and a key that switches menus from two of the
             // tabs and mutes from the third is worse than a less obvious one.
             case Qt.Key_P: Menus.open("media");     event.accepted = true; return;
+            case Qt.Key_C: Menus.open("claude");    event.accepted = true; return;
             }
 
             switch (event.key) {
@@ -291,7 +292,8 @@ PanelWindow {
                             { menu: "audio",     key: "s", glyph: "󰕾" },
                             { menu: "network",   key: "w", glyph: "󰤨" },
                             { menu: "bluetooth", key: "b", glyph: "󰂯" },
-                            { menu: "media",     key: "p", glyph: "󰎈" }
+                            { menu: "media",     key: "p", glyph: "󰎈" },
+                            { menu: "claude",    key: "c", glyph: "✳" }
                         ]
 
                         delegate: Rectangle {

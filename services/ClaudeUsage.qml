@@ -142,6 +142,15 @@ Singleton {
     readonly property bool stale: !known || (now > 0 && lastSeen > 0 && now - lastSeen > 600000)
     property double lastSeen: 0
 
+    // The peek card and the widget tooltip both name buckets; one map.
+    function bucketName(key) {
+        return ({ five_hour: "5h", seven_day: "7d" })[key] ?? key;
+    }
+
+    // The claude menu calls this on open, so a peek shows now rather than the
+    // last five-minute poll.
+    function refresh() { fetch.running = true; }
+
     // Rounded to whole minutes; a to-the-second countdown on a quota is noise.
     function untilReset(epochMs) {
         if (epochMs <= 0 || now <= 0) return "";
