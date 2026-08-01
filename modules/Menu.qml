@@ -211,6 +211,10 @@ PanelWindow {
             case Qt.Key_S: Menus.open("audio");     event.accepted = true; return;
             case Qt.Key_W: Menus.open("network");   event.accepted = true; return;
             case Qt.Key_B: Menus.open("bluetooth"); event.accepted = true; return;
+            // p for player — m would be the obvious letter, but the audio menu
+            // spends m on mute and a key that switches menus from two of the
+            // tabs and mutes from the third is worse than a less obvious one.
+            case Qt.Key_P: Menus.open("media");     event.accepted = true; return;
             }
 
             switch (event.key) {
@@ -273,7 +277,7 @@ PanelWindow {
                 anchors { fill: parent; margins: 8 }
                 spacing: 1
 
-                // The three menus are tabs on one surface, so which one you're
+                // The menus are tabs on one surface, so which one you're
                 // in and how to reach the others is visible rather than
                 // remembered. The letter is the key that gets you there.
                 RowLayout {
@@ -286,7 +290,8 @@ PanelWindow {
                         model: [
                             { menu: "audio",     key: "s", glyph: "󰕾" },
                             { menu: "network",   key: "w", glyph: "󰤨" },
-                            { menu: "bluetooth", key: "b", glyph: "󰂯" }
+                            { menu: "bluetooth", key: "b", glyph: "󰂯" },
+                            { menu: "media",     key: "p", glyph: "󰎈" }
                         ]
 
                         delegate: Rectangle {

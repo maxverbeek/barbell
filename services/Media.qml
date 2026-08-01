@@ -7,7 +7,12 @@ import Quickshell.Services.Mpris
 Singleton {
     id: root
 
-    readonly property var players: Mpris.players?.values ?? []
+    // playerctld mirrors whichever player was last active under its own MPRIS
+    // name, so with it running every player shows up twice — once as itself,
+    // once through the mirror, same identity and same track. Drop the mirror:
+    // the real players are all here anyway.
+    readonly property var players: (Mpris.players?.values ?? [])
+        .filter(p => !p.dbusName?.endsWith(".playerctld"))
 
     // The player to show. Something actually playing wins over something
     // merely open, so starting a video in a browser takes over from a paused

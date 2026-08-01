@@ -29,6 +29,11 @@ ShellRoot {
         delegate: BluetoothMenu {}
     }
 
+    Variants {
+        model: Quickshell.screens
+        delegate: MediaMenu {}
+    }
+
     // Volume feedback for changes that came from a key rather than a menu.
     Variants {
         model: Quickshell.screens
@@ -57,6 +62,7 @@ ShellRoot {
         function audio(): void { Menus.toggle("audio"); }
         function network(): void { Menus.toggle("network"); }
         function bluetooth(): void { Menus.toggle("bluetooth"); }
+        function media(): void { Menus.toggle("media"); }
         function close(): void { Menus.close(); }
         function current(): string { return Menus.current; }
         // What the open menu is actually showing. Screenshots can't always be
