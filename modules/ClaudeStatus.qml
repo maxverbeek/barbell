@@ -4,23 +4,31 @@ import ".."
 import "../services" as Svc
 
 // Claude rate limits, following the interest rules: plenty of quota is the
-// boring case, so it draws nothing at all. The widget exists for the two
-// moments worth a glance — you're getting close to a limit, or you're about
-// to start something big and want to know if there's room.
+// boring case, so it draws nothing at all. What counts as "plenty" is pace,
+// not level — 16% of the week gone is fine on Thursday and alarming an hour
+// after reset, so the trigger is the projection: what linear burn says the
+// bucket hits by its reset.
 //
-//   < 50%  — nothing. The answer is "you're fine" and the bar says it by
-//            staying empty.
-//   >= 50% — the fuller bucket as a percentage. Colour walks fg → warn → bad.
-//   hover  — every bucket with its reset countdown, since "77%" immediately
-//            asks "of which window, and until when".
+//   on pace to last  — nothing. The answer is "you're fine" and the bar says
+//                      it by staying empty.
+//   projected >= 100 — the at-risk bucket's used%, with ↗ to say it's the
+//                      trend that's the problem, not the level.
+//   used >= 70       — shown regardless of pace; close is close.
+//   hover            — every bucket, its projection and reset countdown.
 //
 // Data is only as fresh as the last statusline render (see ClaudeUsage), so a
 // stale number greys out rather than lying confidently.
 Item {
     id: root
 
+    readonly property var risk: Svc.ClaudeUsage.riskiest
+
+    // The pace trigger needs a floor: minutes after a reset every prompt is
+    // "over pace" and the widget would cry wolf over 4%.
+    readonly property bool onPace: risk.used >= 20 && risk.projected >= 100
+
     readonly property bool interesting:
-        Svc.ClaudeUsage.known && Svc.ClaudeUsage.worst >= 50
+        Svc.ClaudeUsage.known && (risk.used >= 70 || onPace)
 
     visible: interesting
     implicitWidth: visible ? row.implicitWidth : 0
@@ -42,12 +50,13 @@ Item {
 
         Text {
             id: label
-            text: `${Math.round(Svc.ClaudeUsage.worst)}%`
+            // The arrow marks "burning too fast" as distinct from "nearly
+            // full" — a low number in warn colour needs the why.
+            text: `${Math.round(root.risk.used)}%${root.onPace ? "↗" : ""}`
             font { family: Theme.font; pixelSize: 12 }
             color: Svc.ClaudeUsage.stale ? Theme.off
-                : Svc.ClaudeUsage.worst >= 90 ? Theme.bad
-                : Svc.ClaudeUsage.worst >= 70 ? Theme.warn
-                : Theme.fgDim
+                : root.risk.used >= 90 || root.risk.projected >= 150 ? Theme.bad
+                : Theme.warn
             anchors.verticalCenter: parent.verticalCenter
         }
     }
@@ -94,10 +103,15 @@ Item {
                             const names = { five_hour: "5h", seven_day: "7d" };
                             const name = names[modelData.key] ?? modelData.key;
                             const reset = Svc.ClaudeUsage.untilReset(modelData.resetsAt);
-                            return `${name}  ${Math.round(modelData.used)}%  ·  resets in ${reset}`;
+                            // The projection only earns a mention when it says
+                            // something the level doesn't.
+                            const proj = modelData.projected >= modelData.used + 5
+                                ? `  →${Math.min(999, Math.round(modelData.projected))}%`
+                                : "";
+                            return `${name}  ${Math.round(modelData.used)}%${proj}  ·  resets in ${reset}`;
                         }
-                        color: modelData.used >= 90 ? Theme.bad
-                            : modelData.used >= 70 ? Theme.warn
+                        color: modelData.used >= 90 || modelData.projected >= 150 ? Theme.bad
+                            : modelData.used >= 70 || modelData.projected >= 100 ? Theme.warn
                             : Theme.fg
                         font { family: Theme.font; pixelSize: 11 }
                     }

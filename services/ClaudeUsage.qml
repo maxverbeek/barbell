@@ -51,7 +51,22 @@ Singleton {
             resetsAt: (rl[k]?.resets_at ?? 0) * 1000
         }));
         const apiFresh = now > 0 && apiSeen > 0 && now - apiSeen < 900000;
-        return apiFresh ? fromFile.concat(scoped) : fromFile;
+        const all = apiFresh ? fromFile.concat(scoped) : fromFile;
+        return all.map(w => Object.assign({}, w, { projected: projectedAt(w) }));
+    }
+
+    // What linear burn says the bucket hits by reset. 40% used with the week
+    // 80% gone projects to 50 — fine; 40% used two days in projects to 140 —
+    // cooked. This is the number that makes "is that a lot?" answerable, since
+    // a percentage means nothing without knowing how much window is left. At
+    // the end of a window it converges to the plain used%, so it works as the
+    // single risk measure.
+    function projectedAt(w) {
+        const len = w.key === "five_hour" ? 5 * 3600000 : 7 * 86400000;
+        const elapsed = 1 - Math.max(0, w.resetsAt - now) / len;
+        // A freshly reset window divides by nearly zero and screams over
+        // nothing; below 5% elapsed the pace isn't information yet.
+        return elapsed >= 0.05 ? w.used / elapsed : w.used;
     }
 
     // Per-model weekly limits (Fable, today) never appear in the statusline
@@ -103,11 +118,12 @@ Singleton {
         }
     }
 
-    // The fullest bucket is what actually constrains you, and it's the number
-    // worth a glance — being at 80% of the week matters whether or not this
-    // particular 5h block is fresh.
-    readonly property real worst:
-        windows.reduce((m, w) => Math.max(m, w.used), 0)
+    // The bucket most likely to actually stop you — highest projected, not
+    // highest used. 16% of the week burned in half a day outranks a 5h window
+    // at 40% that resets before it matters.
+    readonly property var riskiest:
+        windows.reduce((a, b) => b.projected > a.projected ? b : a,
+                       ({ key: "", used: 0, projected: 0, resetsAt: 0 }))
 
     // Ticks so the countdown and the staleness check stay honest without every
     // reader running its own timer. A minute is plenty for a 5-hour window.
