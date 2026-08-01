@@ -66,28 +66,100 @@ Singleton {
     }
 
     // --- vpn -----------------------------------------------------------
-    property bool vpnActive: false
-    property string vpnName: ""
+    //
+    // Quickshell's DeviceType is None | Wifi | Wired, with no VPN case and no
+    // way to reach a vpn/wireguard/tun connection through the model — the gap
+    // that ags had too, and the reason this bar exists. So VPN goes through
+    // nmcli, re-queried whenever `nmcli monitor` reports movement.
 
-    // Both real VPN profiles and tun devices count: tailscale shows up as a
-    // plain `tun`, not `vpn`, and it's the one that's up most of the time.
+    // Every VPN-ish profile, active or not: { name, type, active }.
+    property var tunnels: []
+
+    readonly property var activeTunnels: tunnels.filter(t => t.active)
+    readonly property bool vpnActive: activeTunnels.length > 0
+    // The bar shows one name. Prefer a real tunnel over tailscale, which is up
+    // almost always and so says the least about what's going on.
+    readonly property string vpnName: {
+        const t = activeTunnels.find(t => t.type !== "tun") ?? activeTunnels[0];
+        return t ? tunnelLabel(t) : "";
+    }
+
+    // Tailscale is a tun device NetworkManager can see but can't bring up, so
+    // it's toggled through its own CLI. Anything else is an nmcli profile.
+    function isTailscale(t) { return t.type === "tun" && t.name.startsWith("tailscale"); }
+
+    // Mullvad-style profile names — es-bcn-wg-002, nl-ams-wg-008 — are a
+    // country, a city and a server number. Unreadable in a list, and the
+    // number rarely matters, so show "Barcelona 002" instead.
+    readonly property var cities: ({
+        ams: "Amsterdam", atl: "Atlanta", bcn: "Barcelona", got: "Gothenburg",
+        mad: "Madrid", mil: "Milan"
+    })
+
+    function tunnelLabel(t) {
+        if (!t) return "";
+        if (isTailscale(t)) return "Tailscale";
+        const m = t.name.match(/^([a-z]{2})-([a-z]{3})-wg-(\d+)$/);
+        if (m) {
+            const city = cities[m[2]] ?? m[2].toUpperCase();
+            return `${city} ${m[3]}`;
+        }
+        // nl982.nordvpn.com.udp → NordVPN nl982
+        const nord = t.name.match(/^([a-z]{2}\d+)\.nordvpn\.com/);
+        if (nord) return `NordVPN ${nord[1]}`;
+        return t.name;
+    }
+
+    // Country, for grouping the list.
+    function tunnelGroup(t) {
+        if (!t) return "";
+        if (isTailscale(t)) return "Mesh";
+        if (/nordvpn/.test(t.name)) return "NordVPN";
+        const m = t.name.match(/^([a-z]{2})-/);
+        return m ? m[1].toUpperCase() : "VPN";
+    }
+
+    function toggleTunnel(t) {
+        if (!t) return;
+        if (isTailscale(t)) {
+            Quickshell.execDetached(["tailscale", t.active ? "down" : "up"]);
+        } else {
+            Quickshell.execDetached(["nmcli", "connection", t.active ? "down" : "up", t.name]);
+        }
+        // nmcli monitor will tell us when it lands; nothing optimistic here.
+    }
+
+    // Two queries because `connection show` alone can't tell you which of the
+    // listed profiles is up — the --active form is a different list.
     Process {
         id: vpnQuery
-        command: ["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show", "--active"]
+        command: ["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"]
         stdout: StdioCollector {
             onStreamFinished: {
-                let name = "";
+                const found = [];
                 for (const line of text.trim().split("\n")) {
                     const sep = line.lastIndexOf(":");
                     if (sep < 0) continue;
                     const type = line.slice(sep + 1);
-                    if (type === "vpn" || type === "wireguard" || type === "tun") {
-                        name = line.slice(0, sep);
-                        break;
-                    }
+                    if (type === "vpn" || type === "wireguard" || type === "tun")
+                        found.push({ name: line.slice(0, sep), type: type, active: false });
                 }
-                root.vpnActive = name !== "";
-                root.vpnName = name;
+                root._known = found;
+                activeQuery.running = true;
+            }
+        }
+    }
+
+    property var _known: []
+
+    Process {
+        id: activeQuery
+        command: ["nmcli", "-t", "-f", "NAME", "connection", "show", "--active"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const up = new Set(text.trim().split("\n"));
+                root.tunnels = root._known.map(t =>
+                    ({ name: t.name, type: t.type, active: up.has(t.name) }));
             }
         }
     }

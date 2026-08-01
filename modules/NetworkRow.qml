@@ -45,7 +45,9 @@ Item {
             spacing: 8
 
             Text {
-                text: root.row.kind === "vpn" ? "󰦝"
+                text: root.row.kind === "vpn"
+                        ? (root.row.tunnel.active ? "󰦝" : "󰦜")
+                    : root.row.kind === "more" ? "󰇘"
                     : root.row.kind === "toggle"
                         ? (Svc.Network.wifiEnabled ? "󰖩" : "󰖪")
                     : root.connected ? "󰄬"
@@ -55,7 +57,8 @@ Item {
                     : root.net && root.net.signalStrength >= 0.25 ? "󰤢"
                     : "󰤟"
                 font { family: Theme.iconFont; pixelSize: 13 }
-                color: root.row.kind === "vpn" ? Theme.good
+                color: root.row.kind === "vpn"
+                        ? (root.row.tunnel.active ? Theme.good : Theme.fgFaint)
                     : root.connected ? Theme.good
                     : root.connecting ? Theme.warn
                     : root.row.kind === "toggle" && !Svc.Network.wifiEnabled ? Theme.off
@@ -65,18 +68,32 @@ Item {
 
             Text {
                 visible: !root.asking
-                text: root.row.kind === "vpn" ? Svc.Network.vpnName
+                text: root.row.kind === "vpn" ? Svc.Network.tunnelLabel(root.row.tunnel)
+                    : root.row.kind === "more" ? `${root.row.count} more exits`
                     : root.row.kind === "toggle"
                         ? (Svc.Network.wifiEnabled ? "Wi-Fi on" : "Wi-Fi off")
                     : root.net.name
-                color: root.connected || root.row.kind === "vpn" ? Theme.fg : Theme.fgDim
+                color: root.row.kind === "more" ? Theme.fgFaint
+                    : root.row.kind === "vpn"
+                        ? (root.row.tunnel.active ? Theme.fg : Theme.fgDim)
+                    : root.connected ? Theme.fg : Theme.fgDim
                 font {
                     family: Theme.font
                     pixelSize: 12
-                    weight: root.connected ? Font.DemiBold : Font.Normal
+                    weight: root.connected
+                        || (root.row.kind === "vpn" && root.row.tunnel.active)
+                            ? Font.DemiBold : Font.Normal
                 }
                 elide: Text.ElideRight
                 Layout.fillWidth: true
+            }
+
+            // Which country an exit is in, when it isn't obvious from the name.
+            Text {
+                visible: root.row.kind === "vpn" && !root.row.tunnel.active
+                text: Svc.Network.tunnelGroup(root.row.tunnel)
+                color: Theme.fgFaint
+                font { family: Theme.font; pixelSize: 10; letterSpacing: 0.4 }
             }
 
             // The password field takes over the row it belongs to, so there's

@@ -23,10 +23,24 @@ Menu {
 
     function cancelPassword() { pending = null; password = ""; }
 
+    // Active tunnels first so turning one off is always at the top, then the
+    // rest to pick from. Eight WireGuard exits is too many to scroll past on
+    // the way to wifi, so only the active ones show until you search or the
+    // section is expanded.
+    property bool showAllTunnels: false
+
     allRows: {
         const out = [];
-        if (Svc.Network.vpnActive)
-            out.push({ kind: "vpn", section: "VPN" });
+        const ts = Svc.Network.tunnels;
+        const active = ts.filter(t => t.active);
+        const rest = ts.filter(t => !t.active);
+        const shown = (showAllTunnels || query !== "") ? active.concat(rest) : active;
+        for (const t of shown)
+            out.push({ kind: "vpn", tunnel: t, section: "VPN" });
+        // A way in when nothing is connected and nothing is expanded.
+        if (!showAllTunnels && query === "" && rest.length > 0)
+            out.push({ kind: "more", count: rest.length, section: "VPN" });
+
         out.push({ kind: "toggle", section: "Wi-Fi" });
         if (Svc.Network.wifiEnabled)
             for (const n of Svc.Network.networks)
@@ -34,9 +48,11 @@ Menu {
         return out;
     }
 
-    // The toggle and the VPN line always survive a filter; only networks are
-    // searchable, which is the point of typing in the first place.
-    rowText: row => row.kind === "network" ? row.net.name : ""
+    // Networks and tunnels are both searchable — typing "ams" should find
+    // Amsterdam whether it's a wifi name or an exit node. The toggles aren't.
+    rowText: row => row.kind === "network" ? row.net.name
+        : row.kind === "vpn" ? Svc.Network.tunnelLabel(row.tunnel)
+        : ""
 
     anchorOf: section => {
         const first = rows.findIndex(r => r.section === section);
@@ -48,7 +64,8 @@ Menu {
 
     activateRow: row => {
         if (row.kind === "toggle") { Svc.Network.toggleWifi(); return; }
-        if (row.kind === "vpn") return;              // nothing to do yet
+        if (row.kind === "more") { root.showAllTunnels = true; return; }
+        if (row.kind === "vpn") { Svc.Network.toggleTunnel(row.tunnel); return; }
         const n = row.net;
         if (n.connected) { n.disconnect(); return; }
         if (Svc.Network.needsPassword(n)) { root.pending = n; root.password = ""; return; }
