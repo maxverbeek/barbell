@@ -10,7 +10,10 @@ import "../services"
 //   ssid  — only when it isn't the network I'm always on. Home wifi is noise.
 Row {
     id: root
-    spacing: 5
+    // The vpn glyph is a sibling of the other island icons, so the gap here is
+    // the island's rhythm. Only the ssid label hugs tighter — it's a caption
+    // on the wifi icon, not another item in the row.
+    spacing: 10
 
     signal openMenu()
 
@@ -26,32 +29,37 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
     }
 
-    Text {
-        text: !Network.wifiEnabled ? "󰤮"
-            : Network.wired ? "󰈁"
-            : !Network.wifiConnected ? "󰤯"
-            : Network.signal >= 0.75 ? "󰤨"
-            : Network.signal >= 0.5 ? "󰤥"
-            : Network.signal >= 0.25 ? "󰤢"
-            : "󰤟"
-        font { family: Theme.iconFont; pixelSize: 15 }
-        // Off is a choice; disconnected-but-on is a problem.
-        color: !Network.wifiEnabled ? Theme.off
-            : (Network.wifiConnected || Network.wired) ? Theme.fg
-            : Theme.warn
+    Row {
+        spacing: 5
         anchors.verticalCenter: parent.verticalCenter
-    }
 
-    Text {
-        // 18 chars keeps "Researchable: work…" — the colon is what tells it
-        // apart from the office network of the same name.
-        readonly property string full: Network.ssid
-        visible: text !== ""
-        text: full === "" || root.familiar.includes(full) ? ""
-            : full.length > 18 ? full.slice(0, 18) + "…"
-            : full
-        color: Theme.fgDim
-        font { family: Theme.font; pixelSize: 13 }
-        anchors.verticalCenter: parent.verticalCenter
+        Text {
+            text: !Network.wifiEnabled ? "󰤮"
+                : Network.wired ? "󰈁"
+                : !Network.wifiConnected ? "󰤯"
+                : Network.signal >= 0.75 ? "󰤨"
+                : Network.signal >= 0.5 ? "󰤥"
+                : Network.signal >= 0.25 ? "󰤢"
+                : "󰤟"
+            font { family: Theme.iconFont; pixelSize: 15 }
+            // Off is a choice; disconnected-but-on is a problem.
+            color: !Network.wifiEnabled ? Theme.off
+                : (Network.wifiConnected || Network.wired) ? Theme.fg
+                : Theme.warn
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Text {
+            // 18 chars keeps "Researchable: work…" — the colon is what tells
+            // it apart from the office network of the same name.
+            readonly property string full: Network.ssid
+            visible: text !== ""
+            text: full === "" || root.familiar.includes(full) ? ""
+                : full.length > 18 ? full.slice(0, 18) + "…"
+                : full
+            color: Theme.fgDim
+            font { family: Theme.font; pixelSize: 13 }
+            anchors.verticalCenter: parent.verticalCenter
+        }
     }
 }

@@ -9,7 +9,9 @@ import "../services"
 //             *while* something wants it is the loud case: you're talking and
 //             nobody can hear you.
 Row {
-    spacing: 12
+    // Matches the island's gap, so mic-speaker doesn't read as looser than
+    // the rest of the row.
+    spacing: 10
 
     Text {
         visible: Audio.micInUse || Audio.micMuted
