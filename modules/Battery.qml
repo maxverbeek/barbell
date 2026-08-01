@@ -20,7 +20,9 @@ Item {
         : percent <= 25 ? Theme.warn
         : Theme.fg
 
-    implicitWidth: body.width + cap.width + (charging ? glyph.width + 2 : 0)
+    // Width is constant: the bolt replaces the terminal nub rather than joining
+    // it, so plugging in never reflows the bar.
+    implicitWidth: body.width + 5
     implicitHeight: 15
 
     // Drawn as a solid pill with the EMPTY part masked out in the background
@@ -107,9 +109,11 @@ Item {
         }
     }
 
-    // The nub on the positive terminal.
+    // The positive terminal — a nub normally, a bolt while charging. They
+    // occupy the same slot so the outline keeps its silhouette either way.
     Rectangle {
         id: cap
+        visible: !root.charging
         anchors { left: body.right; verticalCenter: body.verticalCenter }
         width: 2
         height: 5
@@ -118,14 +122,12 @@ Item {
         opacity: 0.95
     }
 
-    // Charging bolt, sitting past the terminal.
     Text {
         id: glyph
         visible: root.charging
-        anchors { left: cap.right; leftMargin: 2; verticalCenter: parent.verticalCenter }
+        anchors { left: body.right; leftMargin: 0.5; verticalCenter: parent.verticalCenter }
         text: "󱐋"
-        font.family: "JetBrainsMono Nerd Font"
-        font.pixelSize: 12
+        font { family: Theme.iconFont; pixelSize: 13 }
         color: root.state
     }
 }
