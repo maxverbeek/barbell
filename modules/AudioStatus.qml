@@ -11,8 +11,6 @@ import "../services"
 Row {
     spacing: 12
 
-    signal openMenu()
-
     Text {
         visible: Audio.micInUse || Audio.micMuted
         text: Audio.micMuted ? "󰍭" : "󰍬"
@@ -48,7 +46,7 @@ Row {
             acceptedButtons: Qt.LeftButton | Qt.MiddleButton
             onClicked: mouse => {
                 if (mouse.button === Qt.MiddleButton) Audio.toggleSinkMute();
-                else parent.parent.openMenu();
+                else Menus.toggle("audio");
             }
             onWheel: wheel => Audio.setSinkVolume(
                 Audio.sinkVolume + (wheel.angleDelta.y > 0 ? 0.05 : -0.05))

@@ -15,8 +15,6 @@ Row {
 
     visible: Kube.context !== ""
 
-    signal openMenu()
-
     IconImage {
         source: Icons.custom("kubernetes")
         implicitSize: 14
