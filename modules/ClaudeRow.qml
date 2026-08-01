@@ -89,6 +89,11 @@ Item {
                 : `${Math.round(root.bucket.used)}%  ·  ${Svc.ClaudeUsage.untilReset(root.bucket.resetsAt)}`
             color: root.tone === Theme.accent ? Theme.fgDim : root.tone
             font { family: Theme.font; pixelSize: 11 }
+            // Fixed width, right-aligned: "3h12m" and "5d" are different sizes,
+            // and natural width would let each row's countdown decide where the
+            // track ends — bars that stop in three different places.
+            width: 84
+            horizontalAlignment: Text.AlignRight
             anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
         }
 

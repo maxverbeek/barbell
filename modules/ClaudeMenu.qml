@@ -34,8 +34,10 @@ Menu {
 
         Layout.fillWidth: true
         row: modelData
-        active: index === root.selected
-        onHovered: root.selected = index
+        // Never highlighted: this menu is a readout, and with no activateRow or
+        // nudgeRow to reach, a cursor would promise an action that isn't there.
+        // j/k still move root.selected, it just doesn't draw.
+        active: false
 
         heading: index === 0
             || root.rows[index - 1].section !== modelData.section
