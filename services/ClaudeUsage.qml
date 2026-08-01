@@ -40,14 +40,67 @@ Singleton {
     }
 
     // Whatever buckets the payload actually reports, rather than the two we know
-    // about — if a Fable session adds its own, it shows up here without a change.
+    // about, plus the scoped ones only the API tells us about. Scoped buckets
+    // are dropped once the poll stops answering — a Fable number from an hour
+    // ago shown next to live 5h/7d numbers would read as equally current.
     readonly property var windows: {
         const rl = data?.rate_limits ?? {};
-        return Object.keys(rl).map(k => ({
+        const fromFile = Object.keys(rl).map(k => ({
             key: k,
             used: rl[k]?.used_percentage ?? 0,
             resetsAt: (rl[k]?.resets_at ?? 0) * 1000
         }));
+        const apiFresh = now > 0 && apiSeen > 0 && now - apiSeen < 900000;
+        return apiFresh ? fromFile.concat(scoped) : fromFile;
+    }
+
+    // Per-model weekly limits (Fable, today) never appear in the statusline
+    // payload — the OAuth usage endpoint is the only place that reports them.
+    // The unscoped entries it also returns are the same 5h/7d numbers the file
+    // already pushes on every render, so only the scoped ones are kept.
+    property var scoped: []
+    property double apiSeen: 0
+
+    Timer {
+        // Weekly buckets move slowly; five minutes is generous.
+        interval: 300000
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: fetch.running = true
+    }
+
+    Process {
+        id: fetch
+
+        // The token rides in via curl's config-from-stdin rather than argv,
+        // where any process could read it out of /proc/*/cmdline.
+        command: ["bash", "-c",
+            `token=$(jq -r '.claudeAiOauth.accessToken // empty' ~/.claude/.credentials.json 2>/dev/null); ` +
+            `[ -n "$token" ] || exit 1; ` +
+            `printf 'header = "Authorization: Bearer %s"\\n' "$token" | ` +
+            `curl -sf -m 10 -K - -H "anthropic-beta: oauth-2025-04-20" https://api.anthropic.com/api/oauth/usage`]
+
+        stdout: StdioCollector {
+            onStreamFinished: root.ingestApi(text)
+        }
+    }
+
+    function ingestApi(raw) {
+        try {
+            const limits = JSON.parse(raw)?.limits ?? [];
+            scoped = limits
+                .filter(l => l.scope)
+                .map(l => ({
+                    key: l.scope.model?.display_name ?? l.kind,
+                    used: l.percent ?? 0,
+                    resetsAt: Date.parse(l.resets_at) || 0
+                }));
+            apiSeen = Date.now();
+        } catch (e) {
+            // Failed fetch or changed shape: keep what we had; the freshness
+            // window in `windows` retires it if this keeps happening.
+        }
     }
 
     // The fullest bucket is what actually constrains you, and it's the number
@@ -80,6 +133,9 @@ Singleton {
         if (mins <= 0) return "now";
         if (mins < 60) return `${mins}m`;
         const h = Math.floor(mins / 60);
+        // Weekly windows reset days out; "125h54m" is a subtraction problem,
+        // not an answer.
+        if (h >= 48) return `${Math.round(h / 24)}d`;
         return mins % 60 === 0 ? `${h}h` : `${h}h${mins % 60}m`;
     }
 
