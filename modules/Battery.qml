@@ -53,9 +53,15 @@ Item {
             id: uncharged
             anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
             width: parent.width * (100 - Math.max(0, Math.min(100, root.percent))) / 100
-            // Square on the left — the charged/uncharged boundary. The body's
-            // clip trims the right end to the rounded outline.
-            radius: 0
+            // Square on the left — that's the charged/uncharged boundary — but
+            // the body's own radius on the right, because that edge *is* the
+            // body's corner. Qt's clip is a rectangular scissor test, so it
+            // cannot round this for us: leaving it square shows a hard corner
+            // poking out of the rounded end.
+            topLeftRadius: 0
+            bottomLeftRadius: 0
+            topRightRadius: parent.radius
+            bottomRightRadius: parent.radius
             color: root.rest
             Behavior on width { NumberAnimation { duration: 240; easing.type: Easing.OutQuad } }
         }
