@@ -7,9 +7,9 @@ import "../services" as Svc
 // What's playing, in the middle of the bar — the one place with room, and the
 // one thing transient enough to earn it. Gone entirely when nothing plays.
 //
-// Transport controls slide in beside the title on hover rather than replacing
-// it: swapping text for buttons in the same slot means one of them is always
-// off-centre, and you lose sight of what you're skipping away from.
+// Transport controls sit beside the title and fade in on hover. They keep
+// their space when hidden: anything that resizes on hover moves the title out
+// from under the pointer, which unhovers the widget and collapses it again.
 Item {
     id: root
 
@@ -17,9 +17,8 @@ Item {
     implicitWidth: visible ? row.implicitWidth : 0
     implicitHeight: 22
 
-    // One MouseArea spanning the whole widget decides this. Asking the buttons
-    // whether they're hovered too would be circular — they only exist while
-    // hovered, so they'd keep themselves alive.
+    // One MouseArea over the whole widget decides this, buttons included — it
+    // sits behind them so they take their own clicks while it keeps the hover.
     readonly property bool hovered: area.containsMouse
 
     RowLayout {
@@ -67,26 +66,21 @@ Item {
             Behavior on color { ColorAnimation { duration: 120 } }
         }
 
-        // Slides out from nothing, so the bar's centre only shifts while
-        // you're pointing at it.
+        // The space is reserved whether or not the buttons are showing, so they
+        // fade rather than expand. Animating the width pushed the title left
+        // out from under the pointer, which unhovered the widget, which
+        // collapsed it back — a loop you could feel as a flicker.
         RowLayout {
             id: transport
-            readonly property bool hovered: prev.hovered || play.hovered || next.hovered
 
             spacing: 4
             Layout.alignment: Qt.AlignVCenter
-            Layout.preferredWidth: root.hovered ? implicitWidth : 0
             opacity: root.hovered ? 1 : 0
-            visible: Layout.preferredWidth > 0
-            clip: true
-
-            Behavior on Layout.preferredWidth {
-                NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
-            }
             Behavior on opacity { NumberAnimation { duration: 140 } }
 
             MediaButton {
                 id: prev
+                active: root.hovered
                 glyph: "󰒮"
                 enabled: Svc.Media.player?.canGoPrevious ?? false
                 onTriggered: Svc.Media.previous()
@@ -94,12 +88,14 @@ Item {
 
             MediaButton {
                 id: play
+                active: root.hovered
                 glyph: Svc.Media.playing ? "󰏤" : "󰐊"
                 onTriggered: Svc.Media.toggle()
             }
 
             MediaButton {
                 id: next
+                active: root.hovered
                 glyph: "󰒭"
                 enabled: Svc.Media.player?.canGoNext ?? false
                 onTriggered: Svc.Media.next()

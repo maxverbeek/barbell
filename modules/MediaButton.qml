@@ -10,7 +10,10 @@ Item {
 
     property string glyph: ""
     property bool enabled: true
-    readonly property bool hovered: area.containsMouse
+    // Set false while the row is faded out: the buttons keep their space so
+    // the layout doesn't move, so they have to stop taking clicks themselves.
+    property bool active: true
+    readonly property bool hovered: area.containsMouse && active
 
     signal triggered()
 
@@ -38,7 +41,7 @@ Item {
         id: area
         anchors.fill: parent
         hoverEnabled: true
-        enabled: root.enabled
+        enabled: root.enabled && root.active
         onClicked: root.triggered()
     }
 }
