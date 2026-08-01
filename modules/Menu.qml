@@ -257,14 +257,17 @@ PanelWindow {
             width: root.cardWidth
             implicitHeight: content.implicitHeight + 16
             height: implicitHeight
-            // Tucked against the bar on the side the status icons live.
+            // Tucked against the bar on the side the status icons live. No
+            // barHeight in the margins: this surface spans the screen *minus*
+            // exclusive zones, so the compositor has already cleared the bar —
+            // adding it here again left a bar-sized ghost gap.
             anchors {
                 right: parent.right
                 rightMargin: 8
                 bottom: Theme.bottom ? parent.bottom : undefined
-                bottomMargin: Theme.bottom ? Theme.barHeight + 6 : 0
+                bottomMargin: Theme.bottom ? 6 : 0
                 top: Theme.bottom ? undefined : parent.top
-                topMargin: Theme.bottom ? 0 : Theme.barHeight + 6
+                topMargin: Theme.bottom ? 0 : 6
             }
             color: Theme.menuBg
             radius: 10
