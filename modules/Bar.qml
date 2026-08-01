@@ -32,6 +32,8 @@ PanelWindow {
             // Exceptions and the always-drawn constants, in a fixed order.
             NetworkStatus {}
 
+            BluetoothStatus { Layout.alignment: Qt.AlignVCenter }
+
             AudioStatus {}
 
             Battery {
