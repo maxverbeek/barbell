@@ -8,6 +8,7 @@ Singleton {
     // Sit at the bottom while ags still owns the top edge.
     readonly property bool bottom: true
 
+    readonly property color bg0: "#1e1e2e"
     readonly property color barBg: "#e61e1e2e"
     readonly property color menuBg: "#181825"
     readonly property color itemBg: "#cc2a2a3a"

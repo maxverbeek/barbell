@@ -1,0 +1,1844 @@
+<title>barbarella — bar design session</title>
+<style>
+  :root {
+    /* Catppuccin Mocha — carried over from ~/.config/ags/styles/_variables.scss */
+    --bg0: #1e1e2e; --bg1: #2a2a3a; --bg2: #363650; --bg3: #494964;
+    --fg0: #cdd6f4; --fg1: #a6adc8; --fg2: #6c7086; --fg3: #45475a;
+    --accent: #89b4fa; --lavender: #b4befe; --sapphire: #74c7ec;
+    --red: #f38ba8; --green: #a6e3a1; --yellow: #f9e2af;
+    --orange: #fab387; --purple: #cba6f7; --teal: #94e2d5;
+
+    /* page chrome — deliberately cooler + flatter than the bar so the bar reads as the object */
+    --page: #131320; --panel: #191927; --line: #262638;
+    --ink: #d7dcec; --ink-dim: #8b90a8; --ink-faint: #5a5f78;
+
+    --mono: "JetBrainsMono Nerd Font", "JetBrains Mono", ui-monospace, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    padding: 40px 24px 120px;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  header { margin-bottom: 40px; }
+  h1 {
+    font-family: var(--mono);
+    font-size: 26px; font-weight: 700;
+    margin: 0 0 6px; letter-spacing: -0.02em;
+  }
+  h1 .dim { color: var(--ink-faint); font-weight: 400; }
+  .sub { color: var(--ink-dim); margin: 0; max-width: 68ch; }
+
+  h2 {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ink-faint);
+    margin: 48px 0 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  /* ---------- the bar itself ---------- */
+  .stage {
+    background:
+      linear-gradient(135deg, #232338 0%, #1b1b2c 50%, #20202f 100%);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0;
+    overflow: hidden;
+  }
+  .stage + .stage { margin-top: 14px; }
+
+  .bar {
+    height: 40px;
+    background: rgba(30, 30, 46, 0.95);
+    display: flex; align-items: center;
+    padding: 0 10px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--fg0);
+    gap: 8px;
+    user-select: none;
+  }
+  .bar .spacer { flex: 1; }
+  .desk {
+    height: 66px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-faint);
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.1em;
+  }
+
+  /* pills */
+  .pill {
+    display: flex; align-items: center; gap: 7px;
+    height: 26px; padding: 0 9px;
+    border-radius: 8px;
+    background: rgba(54, 54, 80, 0.5);
+    transition: background 140ms ease;
+    cursor: default;
+  }
+  .pill.flat { background: transparent; padding: 0 4px; }
+  .pill:hover { background: rgba(54, 54, 80, 0.9); }
+  .ico { font-family: var(--mono); font-size: 14px; line-height: 1; }
+  .val { font-variant-numeric: tabular-nums; font-size: 12px; }
+
+  /* workspaces */
+  .ws {
+    display: flex; align-items: center; gap: 5px;
+    height: 26px; min-width: 26px; padding: 0 8px;
+    border-radius: 8px;
+    background: rgba(42, 42, 58, 0.7);
+    position: relative;
+    cursor: pointer;
+    transition: background 140ms ease;
+  }
+  .ws:hover { background: var(--bg2); }
+  .ws.active { background: var(--bg3); }
+  .ws .app { font-family: var(--mono); font-size: 14px; opacity: 0.5; line-height: 1; }
+  .ws .app.focused { opacity: 1; }
+  .ws .app.focused::after {
+    content: ""; position: absolute; bottom: 3px;
+    left: 50%; transform: translateX(-50%);
+    width: 12px; height: 2px; border-radius: 1px;
+    background: var(--accent);
+  }
+  .ws .idx { color: var(--fg1); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .ws.active .idx { color: var(--fg0); }
+
+  /* state colours */
+  .ok    { color: var(--fg0); }
+  .muted { color: var(--red); }
+  .warn  { color: var(--yellow); }
+  .crit  { color: var(--red); }
+  .good  { color: var(--green); }
+  .off   { color: var(--fg2); }
+  .vpn   { color: var(--green); }
+
+  .kube { color: var(--accent); }
+  .kube.prod { color: var(--red); }
+
+  .clock { font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+  .clock b { font-weight: 600; }
+  .clock .sep { color: var(--fg2); margin: 0 5px; }
+
+  /* reveal animation for resource pills */
+  .reveal {
+    display: inline-block;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 0;
+    opacity: 0;
+    transition: max-width 180ms cubic-bezier(.4,0,.2,1), opacity 140ms ease;
+    font-variant-numeric: tabular-nums; font-size: 12px;
+  }
+  .pill:hover .reveal, .reveal.shown { max-width: 46px; opacity: 1; }
+
+  /* ---------- controls ---------- */
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(196px, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  /* The state switches follow you down the page — every variant below is
+     meant to be judged by flipping them, so they can't scroll away. */
+  .dock {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(19, 19, 32, 0.93);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+    margin: 0 -24px 8px; padding: 10px 24px;
+  }
+  .dock summary {
+    cursor: pointer; list-style: none;
+    font-family: var(--mono); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.11em;
+    color: var(--ink-faint);
+    display: flex; align-items: center; gap: 8px;
+    user-select: none;
+  }
+  .dock summary::-webkit-details-marker { display: none; }
+  .dock summary::before { content: "▾"; font-size: 9px; transition: transform 150ms; }
+  .dock:not([open]) summary::before { transform: rotate(-90deg); }
+  .dock summary:hover { color: var(--ink); }
+  .dock .controls { margin-top: 12px; }
+  .dock .live {
+    margin-left: auto; font-size: 10px;
+    color: var(--ink-faint); text-transform: none; letter-spacing: 0;
+  }
+  .ctl {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 11px 13px;
+  }
+  .ctl .lbl {
+    font-family: var(--mono); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--ink-faint); margin-bottom: 8px;
+  }
+  .ctl label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--ink-dim);
+    cursor: pointer; padding: 2px 0;
+  }
+  .ctl label:hover { color: var(--ink); }
+  input[type=checkbox] { accent-color: var(--accent); cursor: pointer; margin: 0; }
+  input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+
+  /* ---------- variant cards ---------- */
+  .note {
+    font-size: 13.5px; color: var(--ink-dim);
+    margin: 10px 0 0; max-width: 74ch;
+  }
+  .note b { color: var(--ink); font-weight: 600; }
+  .tag {
+    display: inline-block;
+    font-family: var(--mono); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 2px 7px; border-radius: 4px;
+    background: var(--line); color: var(--ink-dim);
+    margin-bottom: 10px;
+  }
+  .tag.pick { background: rgba(137,180,250,0.15); color: var(--accent); }
+
+  /* ---------- popover mock ---------- */
+  .pop {
+    width: 300px;
+    background: #181825;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 8px;
+    font-size: 13px;
+  }
+  .pop .row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 9px; border-radius: 7px;
+    cursor: pointer;
+  }
+  .pop .row:hover { background: var(--bg2); }
+  .pop .row .ico { width: 16px; text-align: center; }
+  .pop .row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pop .row .dot { color: var(--accent); font-size: 11px; }
+  .pop .sec {
+    font-family: var(--mono); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--ink-faint); padding: 9px 9px 5px;
+  }
+  .pop .slider { display: flex; align-items: center; gap: 10px; padding: 6px 9px; }
+  .pop .track {
+    flex: 1; height: 5px; border-radius: 3px;
+    background: var(--bg2); position: relative;
+  }
+  .pop .track i { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--accent); }
+  .pop .pct { font-variant-numeric: tabular-nums; color: var(--ink-dim); font-size: 12px; width: 32px; text-align: right; }
+  .pop .key {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--ink-faint);
+    background: var(--bg1); border: 1px solid var(--line);
+    border-radius: 3px; padding: 1px 5px;
+  }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
+
+  code {
+    font-family: var(--mono); font-size: 12px;
+    background: var(--panel); border: 1px solid var(--line);
+    padding: 1px 5px; border-radius: 4px; color: var(--lavender);
+  }
+
+  /* shift markers: a hairline at each element's resting position */
+  .mark { position: relative; }
+  body.shift .mark::before {
+    content: "";
+    position: absolute; top: -3px; bottom: -3px; left: -1px;
+    width: 1px; background: var(--purple); opacity: 0.65;
+    pointer-events: none;
+  }
+  /* fade-in-place slots */
+  .slot { transition: opacity 160ms ease; }
+  .slot.hidden { opacity: 0; }
+
+  /* two states occupying one box, crossfaded */
+  .xfade { transition: opacity 170ms ease; }
+  .xfade.out { opacity: 0; pointer-events: none; }
+
+  /* --- J: air, literal shapes, no abstraction --- */
+  .bar-air { padding: 0 16px; gap: 14px; font-size: 13px; }
+  .bar-air .ico { font-size: 15px; }
+  .bar-air .ws { padding: 0 9px; }
+
+  /* hairline separator — groups without enclosing, so it can't look empty */
+  .vr {
+    width: 1px; height: 16px;
+    background: var(--fg3); opacity: 0.55;
+    margin: 0 4px;
+  }
+
+  /* battery drawn as a shape that empties, not a glyph that changes */
+  .batt {
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .batt .body {
+    position: relative;
+    width: 24px; height: 12px;
+    border: 1.5px solid currentColor;
+    border-radius: 3.5px;
+    opacity: 0.9;
+  }
+  .batt .body::after {
+    content: ""; position: absolute;
+    right: -3.5px; top: 3.5px;
+    width: 2px; height: 5px;
+    background: currentColor; border-radius: 0 1px 1px 0;
+  }
+  .batt .fill {
+    position: absolute; left: 1.5px; top: 1.5px; bottom: 1.5px;
+    background: currentColor; border-radius: 1.5px;
+    transition: width 220ms ease;
+  }
+  .batt .num { font-variant-numeric: tabular-nums; font-size: 12px; }
+  .batt .bolt { font-size: 10px; margin-left: -2px; }
+
+  /* an icon that shrinks toward a dot when everything is fine */
+  .shrink {
+    display: inline-block;
+    transition: font-size 180ms cubic-bezier(.4,0,.2,1), opacity 180ms ease;
+  }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 14px; }
+  .legend div { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-dim); }
+  .swatch { width: 11px; height: 11px; border-radius: 3px; }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>barbarella <span class="dim">/ design session</span></h1>
+  <p class="sub">
+    Live mockups at true bar scale. Flip the system-state switches to see how each layout
+    behaves when things are healthy versus when they need you — that's the decision that
+    matters most, and it's hard to judge from a static picture.
+  </p>
+</header>
+
+<h2>J — What Apple would do <span class="tag pick" style="margin:0">newest</span></h2>
+<p class="note" style="margin-bottom:6px">
+  "Too dense and too starved at once" is a real diagnosis: things are packed tight
+  <i>and</i> under-informative. That combination means the elements are too small and the
+  spacing too tight — I'd been optimising for width all session, which is the wrong
+  currency on a 1920px bar with an empty middle. Apple's answer would be roughly:
+</p>
+<p class="note" style="margin-bottom:16px">
+  <b>space is the material</b> (~14px between items, never crowded) ·
+  <b>words beat glyphs</b> where a glyph needs a legend ·
+  <b>no abstraction layer</b> — the thing itself or nothing, never a dot standing in for it ·
+  <b>state lives in shape</b>, with colour as reinforcement rather than the message ·
+  <b>nothing below ~11px</b>.
+</p>
+
+<div class="tag pick">J1 · quiet, spacious, literal</div>
+<div class="stage">
+  <div class="bar bar-air" id="barJ1">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+    <span id="J1_status" style="display:flex;align-items:center;gap:16px"></span>
+    <span id="J1_kube" class="kube prod" style="margin-left:16px">rs-prod</span>
+    <span class="clock" style="margin-left:20px">12:26</span>
+  </div>
+  <div class="desk">— healthy system —</div>
+</div>
+<p class="note">
+  Battery as a <b>shape that empties</b>, with its number beside it. Wifi as arcs that drop.
+  No dots, no legend, no hover required — you read it the way you read a phone status bar.
+  Muting the mic adds a mic icon; it doesn't recolour an abstraction.
+  <b>Roughly the same width as I1, but breathing.</b>
+</p>
+
+<div class="tag" style="margin-top:26px">J2 · with words where words are clearer</div>
+<div class="stage">
+  <div class="bar bar-air" id="barJ2">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+    <span id="J2_status" style="display:flex;align-items:center;gap:16px"></span>
+    <span id="J2_kube" class="kube prod" style="margin-left:16px">rs-prod</span>
+    <span class="clock" style="margin-left:20px">Sat 12:26</span>
+  </div>
+  <div class="desk">— healthy system —</div>
+</div>
+<p class="note">
+  The same, but the network says <b>its name</b> and the VPN says <b>its name</b>.
+  This is the one thing your ags bar was missing and it costs a little width to say
+  plainly. Nothing here needs a key to interpret.
+</p>
+
+<div class="tag" style="margin-top:26px">J3 · a separator instead of a container</div>
+<div class="stage">
+  <div class="bar bar-air" id="barJ3">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+    <span id="J3_status" style="display:flex;align-items:center;gap:16px"></span>
+    <span class="vr"></span>
+    <span id="J3_kube" class="kube prod">rs-prod</span>
+    <span class="vr"></span>
+    <span class="clock">Sat 12:26</span>
+  </div>
+  <div class="desk">— healthy system —</div>
+</div>
+<p class="note">
+  You were right that a pill only works when it's full. A <b>hairline rule</b> does the
+  grouping job without implying contents — it separates without enclosing, so it never
+  looks empty. This is what Apple uses in menus, and it's the cheapest possible container.
+</p>
+
+<h2>The current bar, as reference</h2>
+<div class="stage">
+  <div class="bar">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+    <div class="pill"><span class="ico"></span><span class="ico"></span></div>
+    <div class="pill"><span class="ico kube">󱃾</span><span class="kube prod">rs-prod</span></div>
+    <div class="pill"><span class="ico"></span><span class="ico"></span><span class="ico"></span></div>
+    <div class="pill"><span class="ico off"></span><span class="ico"></span><span class="ico"></span></div>
+    <div class="pill flat clock">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— your windows —</div>
+</div>
+<p class="note">
+  Two things to notice: bluetooth and wifi each appear <b>twice</b> (status pill and tray pill),
+  and four adjacent capsules make the eye do grouping work. Also, wifi looks identical
+  whether it's connected or not — the one place your own white-is-healthy rule isn't applied.
+</p>
+
+<details class="dock" open>
+<summary>System state <span class="live">stays with you — flip these against any variant below</span></summary>
+<div class="controls">
+  <div class="ctl">
+    <div class="lbl">Audio</div>
+    <label><input type="checkbox" id="micMuted"> Mic muted</label>
+    <label><input type="checkbox" id="sinkMuted"> Speakers muted</label>
+    <label><input type="checkbox" id="btAudio"> On bluetooth headset</label>
+  </div>
+  <div class="ctl">
+    <div class="lbl">Network</div>
+    <label><input type="checkbox" id="wifiOff"> Wifi off</label>
+    <label><input type="checkbox" id="vpnOn" checked> VPN up (tailscale0)</label>
+    <label><input type="checkbox" id="btOff"> Bluetooth off</label>
+  </div>
+  <div class="ctl">
+    <div class="lbl">Power</div>
+    <label><input type="checkbox" id="charging"> Charging</label>
+    <div style="margin-top:6px"><input type="range" id="batt" min="3" max="100" value="76"></div>
+  </div>
+  <div class="ctl">
+    <div class="lbl">Load</div>
+    <label style="justify-content:space-between">CPU <span class="val" id="cpuOut">18%</span></label>
+    <input type="range" id="cpu" min="0" max="100" value="18">
+    <label style="justify-content:space-between;margin-top:4px">MEM <span class="val" id="memOut">54%</span></label>
+    <input type="range" id="mem" min="0" max="100" value="54">
+  </div>
+  <div class="ctl">
+    <div class="lbl">Context</div>
+    <label><input type="checkbox" id="prod" checked> Production cluster</label>
+    <label><input type="checkbox" id="urgent"> Urgent window</label>
+  </div>
+  <div class="ctl">
+    <div class="lbl">Mockup</div>
+    <label><input type="checkbox" id="showShift" checked> Shift markers</label>
+    <label style="justify-content:space-between;margin-top:4px">Hover delay <span class="val" id="delayOut">120ms</span></label>
+    <input type="range" id="delay" min="0" max="500" step="20" value="120">
+  </div>
+</div>
+</details>
+
+<h2>A — Consolidated <span></span></h2>
+<div class="stage">
+  <div class="bar" id="barA">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+
+    <div class="pill">
+      <span class="ico" id="A_cpuIco">󰍛</span>
+      <span class="reveal" id="A_cpuVal">18%</span>
+      <span class="ico" id="A_memIco" style="margin-left:2px">󰘚</span>
+      <span class="reveal" id="A_memVal">54%</span>
+    </div>
+
+    <div class="pill"><span class="ico kube">󱃾</span><span id="A_kube" class="kube prod">rs-prod</span></div>
+
+    <div class="pill">
+      <span class="ico" id="A_vpn">󰦝</span>
+      <span class="ico" id="A_wifi">󰤨</span>
+      <span class="ico" id="A_bt">󰂯</span>
+      <span class="ico" id="A_mic">󰍬</span>
+      <span class="ico" id="A_snd">󰕾</span>
+      <span class="ico" id="A_batt">󰂁</span>
+      <span class="val off" id="A_battVal">76%</span>
+    </div>
+
+    <div class="pill flat clock">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— your windows —</div>
+</div>
+<p class="note">
+  <b>One status capsule</b> instead of three, in a fixed order you build muscle memory for.
+  Everything sits at rest in <code>--fg0</code> white; only a changed state takes colour.
+  Resource numbers hide until you hover — or until they cross the threshold on their own.
+</p>
+
+<h2>B — Silent</h2>
+<div class="stage">
+  <div class="bar" id="barB">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+    <div class="pill flat" id="B_alerts"></div>
+    <div class="pill flat"><span class="ico kube">󱃾</span><span id="B_kube" class="kube prod">rs-prod</span></div>
+    <div class="pill flat clock">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— your windows —</div>
+</div>
+<p class="note">
+  Same rule taken to its conclusion: <b>if it's healthy, it isn't drawn.</b> A calm system shows
+  only workspaces, cluster and clock. Mute the mic or drop below 20% battery and the icon
+  appears. Maximum signal — but the wifi icon isn't in a fixed place any more, so
+  "click the speaker" becomes "find the speaker".
+</p>
+
+<h2>C — Consolidated, with a resting cluster</h2>
+<div class="stage">
+  <div class="bar" id="barC">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+    <div class="pill">
+      <span class="ico" id="C_cpuIco">󰍛</span><span class="reveal" id="C_cpuVal">18%</span>
+      <span class="ico" id="C_memIco" style="margin-left:2px">󰘚</span><span class="reveal" id="C_memVal">54%</span>
+    </div>
+    <div class="pill"><span class="ico kube">󱃾</span><span id="C_kube" class="kube prod">rs-prod</span></div>
+    <div class="pill" id="C_cluster" title="hover to expand">
+      <span id="C_rest" style="display:flex;gap:5px;align-items:center"></span>
+      <span id="C_full" style="display:none;gap:7px;align-items:center">
+        <span class="ico" id="C_vpn">󰦝</span><span class="ico" id="C_wifi">󰤨</span>
+        <span class="ico" id="C_bt">󰂯</span><span class="ico" id="C_mic">󰍬</span>
+        <span class="ico" id="C_snd">󰕾</span><span class="ico" id="C_batt">󰂁</span>
+        <span class="val off" id="C_battVal">76%</span>
+      </span>
+    </div>
+    <div class="pill flat clock">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— hover the dots cluster —</div>
+</div>
+<p class="note">
+  A compromise: status collapses to three dots that carry colour, and expands on hover
+  or keybind. Anything abnormal <b>breaks out of the cluster on its own</b> and stays visible.
+  Costs a hover for routine checks; the dots do stay in a fixed position.
+</p>
+
+<h2 id="d">D — C, with B's resource rule and bar-wide hover <span class="tag pick" style="margin:0">your call</span></h2>
+<div class="stage">
+  <div class="bar" id="barD">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+    <span id="D_res" style="display:flex;gap:7px;align-items:center"></span>
+    <div class="pill"><span class="ico kube">󱃾</span><span id="D_kube" class="kube prod">rs-prod</span></div>
+    <div class="pill" id="D_cluster">
+      <span id="D_rest" style="display:flex;gap:5px;align-items:center"></span>
+      <span id="D_full" style="display:none;gap:7px;align-items:center">
+        <span class="ico" id="D_vpn">󰦝</span><span class="ico" id="D_wifi">󰤨</span>
+        <span class="ico" id="D_bt">󰂯</span><span class="ico" id="D_mic">󰍬</span>
+        <span class="ico" id="D_snd">󰕾</span><span class="ico" id="D_batt">󰂁</span>
+        <span class="val off" id="D_battVal">76%</span>
+      </span>
+    </div>
+    <div class="pill flat clock">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— hover anywhere on the bar —</div>
+</div>
+<p class="note">
+  Hovering <b>anywhere on the bar</b> reveals the cluster and the resource numbers together.
+  One gesture, no aiming — and the bar is a screen edge, so the pointer stops there naturally
+  when you mean it, and rarely when you don't.
+</p>
+<p class="note" style="margin-top:12px">
+  Resources follow B: <b>invisible below threshold</b>, appearing on their own above it.
+  With a quiet system the whole right side is cluster, cluster, cluster — cluster, kube, clock.
+</p>
+<p class="note" style="margin-top:12px;font-size:12.5px">
+  The <b>hover delay</b> in the dock guards against the cluster flickering open as the pointer
+  crosses on its way elsewhere. 0 feels instant but twitchy; past ~250ms it starts to drag.
+</p>
+
+<h2>Colour language</h2>
+<div class="legend">
+  <div><span class="swatch" style="background:var(--fg0)"></span> default / healthy — white</div>
+  <div><span class="swatch" style="background:var(--green)"></span> active &amp; good — VPN up, charging</div>
+  <div><span class="swatch" style="background:var(--yellow)"></span> attention — load high, battery low</div>
+  <div><span class="swatch" style="background:var(--red)"></span> changed / critical — muted, disconnected</div>
+  <div><span class="swatch" style="background:var(--fg2)"></span> disabled — turned off by you</div>
+  <div><span class="swatch" style="background:var(--accent)"></span> accent — focus, interaction</div>
+</div>
+<p class="note">
+  This is your existing rule, applied consistently. The one addition:
+  <b>grey for "you turned it off"</b> versus red for "it broke" — bluetooth disabled on
+  purpose shouldn't look like an error.
+</p>
+
+<h2>Popover — both hands work</h2>
+<div class="cols">
+  <div>
+    <div class="tag pick">mouse + keyboard</div>
+    <div class="pop">
+      <div class="sec">Output</div>
+      <div class="slider">
+        <span class="ico"></span>
+        <span class="track"><i style="width:65%"></i></span>
+        <span class="pct">65%</span>
+      </div>
+      <div class="row"><span class="ico dot">●</span><span class="name">Built-in Audio Analog Stereo</span></div>
+      <div class="row"><span class="ico"> </span><span class="name">WH-1000XM4</span><span class="key">2</span></div>
+      <div class="sec">Input</div>
+      <div class="slider">
+        <span class="ico"></span>
+        <span class="track"><i style="width:40%"></i></span>
+        <span class="pct">40%</span>
+      </div>
+      <div class="row"><span class="ico dot">●</span><span class="name">Built-in Audio Analog Stereo</span></div>
+      <div class="sec">Bluetooth</div>
+      <div class="row"><span class="ico good"></span><span class="name">WH-1000XM4</span><span class="key">c</span></div>
+      <div class="row"><span class="ico off"></span><span class="name">MX Master 3</span></div>
+    </div>
+  </div>
+  <div>
+    <p class="note" style="margin-top:34px">
+      You said both input modes have to work, so the popover is built for both rather than
+      compromising on one:
+    </p>
+    <p class="note" style="margin-top:12px">
+      <b>Mouse</b> — sliders drag, rows click to switch. The things you named
+      (audio in/out, volume, bluetooth) are all reachable without a keystroke, and audio sits
+      at the top because it's what you touch most.
+    </p>
+    <p class="note" style="margin-top:12px">
+      <b>Keyboard</b> — the popover takes focus when opened by keybind.
+      <code>j/k</code> moves, <code>enter</code> activates, <code>esc</code> closes,
+      and typing filters. The small key hints appear only in keyboard mode, so mouse
+      users never see them.
+    </p>
+    <p class="note" style="margin-top:12px">
+      Network gets its own section further down rather than a top slot — you called it
+      overrated but occasionally necessary, so it's present without taking prime space.
+    </p>
+  </div>
+</div>
+
+<h2>E — Fixing the layout shift</h2>
+<p class="note" style="margin-bottom:16px">
+  Three ways to keep things still. Toggle <b>show shift</b> to draw a marker at each element's
+  resting position — anything that moves away from its marker is shifting. Then flip the
+  state switches above and watch which rows stay put.
+</p>
+
+
+<div class="tag">E1 · right-anchored — grow leftwards</div>
+<div class="stage">
+  <div class="bar" id="barE1">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="spacer"></div>
+    <span id="E1_res" style="display:flex;gap:7px;align-items:center"></span>
+    <div class="pill"><span class="ico kube">󱃾</span><span id="E1_kube" class="kube prod">rs-prod</span></div>
+    <div class="pill" id="E1_cluster">
+      <span id="E1_rest" style="display:flex;gap:5px;align-items:center"></span>
+      <span id="E1_full" style="display:none;gap:7px;align-items:center">
+        <span class="ico" id="E1_vpn">󰦝</span><span class="ico" id="E1_wifi">󰤨</span>
+        <span class="ico" id="E1_bt">󰂯</span><span class="ico" id="E1_mic">󰍬</span>
+        <span class="ico" id="E1_snd">󰕾</span><span class="ico" id="E1_batt">󰂁</span>
+      </span>
+    </div>
+    <div class="pill flat clock mark">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— hover the bar —</div>
+</div>
+<p class="note">
+  Nothing reserved; things simply grow to the <b>left</b>. The clock never moves because it's
+  last, but everything between the cluster and the clock still slides. <b>Cheapest, still shifty.</b>
+</p>
+
+<div class="tag" style="margin-top:26px">E2 · reserved width — fade in place</div>
+<div class="stage">
+  <div class="bar" id="barE2">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="spacer"></div>
+    <span id="E2_res" class="mark" style="display:flex;gap:7px;align-items:center;width:118px;justify-content:flex-end"></span>
+    <div class="pill mark"><span class="ico kube">󱃾</span><span id="E2_kube" class="kube prod">rs-prod</span></div>
+    <div class="pill mark" id="E2_cluster" style="width:158px;justify-content:flex-end">
+      <span id="E2_icons" style="display:flex;gap:7px;align-items:center"></span>
+    </div>
+    <div class="pill flat clock mark">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— hover the bar —</div>
+</div>
+<p class="note">
+  Every slot keeps its width whether occupied or not, so icons <b>fade in place</b> and
+  nothing ever moves. Perfectly stable — but you permanently spend the space you were
+  collapsing to save. The resting bar carries ~120px of deliberate emptiness.
+</p>
+
+<div class="tag" style="margin-top:26px">E3 · no collapse — always drawn, colour-coded</div>
+<div class="stage">
+  <div class="bar" id="barE3">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="spacer"></div>
+    <span id="E3_res" class="mark" style="display:flex;gap:7px;align-items:center;width:118px;justify-content:flex-end"></span>
+    <div class="pill mark"><span class="ico kube">󱃾</span><span id="E3_kube" class="kube prod">rs-prod</span></div>
+    <div class="pill mark">
+      <span class="ico" id="E3_vpn">󰦝</span><span class="ico" id="E3_wifi">󰤨</span>
+      <span class="ico" id="E3_bt">󰂯</span><span class="ico" id="E3_mic">󰍬</span>
+      <span class="ico" id="E3_snd">󰕾</span><span class="ico" id="E3_batt">󰂁</span>
+    </div>
+    <div class="pill flat clock mark">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— nothing to hover; it's all there —</div>
+</div>
+<p class="note">
+  Give up collapsing entirely. Six icons, always present, always in the same place —
+  state lives purely in <b>colour</b>. Zero shift, zero hover, zero hidden information.
+  Resource numbers still reveal, but inside a reserved slot so nothing moves.
+  This is variant A with the shifting engineered out.
+</p>
+
+<h2>F — Making the reserved space look deliberate</h2>
+<p class="note" style="margin-bottom:16px">
+  E2's problem isn't the reserved width, it's that the emptiness is <b>unstructured</b> —
+  it reads as a loading failure rather than a choice. Give the space a visible container
+  and it stops looking like a gap and starts looking like a slot.
+</p>
+
+<div class="tag">F1 · the capsule stays, contents come and go</div>
+<div class="stage">
+  <div class="bar" id="barF1">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="spacer"></div>
+    <div class="pill mark" style="width:112px;justify-content:flex-end">
+      <span id="F1_res" style="display:flex;gap:7px;align-items:center"></span>
+    </div>
+    <div class="pill mark"><span class="ico kube">󱃾</span><span id="F1_kube" class="kube prod">rs-prod</span></div>
+    <div class="pill mark" style="width:152px;justify-content:center">
+      <span id="F1_icons" style="display:flex;gap:9px;align-items:center"></span>
+    </div>
+    <div class="pill flat clock mark">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— hover the bar —</div>
+</div>
+<p class="note">
+  The pill background is always drawn at full width, so the empty space is visibly
+  <b>a container waiting for content</b> rather than a void. Icons centre within it.
+  Same stability as E2, but the bar reads as furnished when quiet.
+</p>
+
+<div class="tag" style="margin-top:26px">F2 · dim, don't hide</div>
+<div class="stage">
+  <div class="bar" id="barF2">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="spacer"></div>
+    <div class="pill mark"><span id="F2_res" style="display:flex;gap:7px;align-items:center"></span></div>
+    <div class="pill mark"><span class="ico kube">󱃾</span><span id="F2_kube" class="kube prod">rs-prod</span></div>
+    <div class="pill mark"><span id="F2_icons" style="display:flex;gap:9px;align-items:center"></span></div>
+    <div class="pill flat clock mark">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— hover the bar —</div>
+</div>
+<p class="note">
+  Nothing is ever hidden or reserved — healthy icons simply sit at <b>low opacity</b> and
+  come up to full when they need you or when you hover. No gaps, no shift, no empty
+  containers, because every slot is always genuinely occupied.
+  <b>Quiet is expressed as dimness rather than absence.</b>
+</p>
+
+<div class="tag" style="margin-top:26px">F3 · dim + numbers reveal on hover</div>
+<div class="stage">
+  <div class="bar" id="barF3">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="spacer"></div>
+    <div class="pill mark" style="width:112px;justify-content:flex-end">
+      <span id="F3_res" style="display:flex;gap:7px;align-items:center"></span>
+    </div>
+    <div class="pill mark"><span class="ico kube">󱃾</span><span id="F3_kube" class="kube prod">rs-prod</span></div>
+    <div class="pill mark"><span id="F3_icons" style="display:flex;gap:9px;align-items:center"></span></div>
+    <div class="pill flat clock mark">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— hover the bar —</div>
+</div>
+<p class="note">
+  F2's dimming for status, plus the resource <b>icons</b> always drawn (dim) with only their
+  <b>numbers</b> revealing into reserved space. The icons anchor the slot so the space is never
+  empty, and the numbers are the only thing that appears. This is the least-motion version
+  that still hides anything.
+</p>
+
+<h2>G — Dots and detail in the same space</h2>
+<p class="note" style="margin-bottom:16px">
+  The dots read as a <b>summary</b>: one glance says "all fine" without parsing six icons.
+  F2 reads as <b>honest</b>: nothing hidden, nothing moving. They only conflict if the dots
+  have to <i>expand</i> into the icons. Give both states the same fixed width and crossfade
+  between them, and you get the summary at rest with the detail on demand — still zero shift.
+</p>
+
+<div class="tag">G1 · crossfade in fixed space</div>
+<div class="stage">
+  <div class="bar" id="barG1">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="spacer"></div>
+    <div class="pill mark" style="width:104px;justify-content:flex-end">
+      <span id="G1_res" style="display:flex;gap:7px;align-items:center"></span>
+    </div>
+    <div class="pill mark"><span class="ico kube">󱃾</span><span id="G1_kube" class="kube prod">rs-prod</span></div>
+    <div class="pill mark" id="G1_slot" style="width:150px;justify-content:center;position:relative">
+      <span id="G1_dots" class="xfade" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:6px"></span>
+      <span id="G1_icons" class="xfade" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:9px"></span>
+    </div>
+    <div class="pill flat clock mark">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— hover the bar —</div>
+</div>
+<p class="note">
+  At rest: <b>three dots</b>, each carrying the colour of one group — network, audio, power.
+  On hover they crossfade to the six icons <b>in the same box</b>, so nothing resizes and
+  nothing slides. Anything abnormal shows its real icon immediately rather than
+  waiting for you, so the summary never hides a problem.
+</p>
+
+<div class="tag" style="margin-top:26px">G2 · dots that are the icons</div>
+<div class="stage">
+  <div class="bar" id="barG2">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="spacer"></div>
+    <div class="pill mark" style="width:104px;justify-content:flex-end">
+      <span id="G2_res" style="display:flex;gap:7px;align-items:center"></span>
+    </div>
+    <div class="pill mark"><span class="ico kube">󱃾</span><span id="G2_kube" class="kube prod">rs-prod</span></div>
+    <div class="pill mark" style="width:150px;justify-content:center">
+      <span id="G2_icons" style="display:flex;gap:9px;align-items:center"></span>
+    </div>
+    <div class="pill flat clock mark">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— hover the bar —</div>
+</div>
+<p class="note">
+  No crossfade at all: the six icons are <b>always the same six icons</b>, they just shrink
+  toward dot-size and lose their detail when everything is fine. Each icon is
+  literally its own dot — same position, same count, so there is nothing to learn
+  between the two states. <b>The simplest possible version of the idea.</b>
+</p>
+
+<div class="tag" style="margin-top:26px">G3 · one dot per group, expanding to that group only</div>
+<div class="stage">
+  <div class="bar" id="barG3">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="spacer"></div>
+    <div class="pill mark" style="width:104px;justify-content:flex-end">
+      <span id="G3_res" style="display:flex;gap:7px;align-items:center"></span>
+    </div>
+    <div class="pill mark"><span class="ico kube">󱃾</span><span id="G3_kube" class="kube prod">rs-prod</span></div>
+    <div class="pill mark" style="width:150px;justify-content:center;gap:14px" id="G3_groups"></div>
+    <div class="pill flat clock mark">Sat 01 Aug<span class="sep">•</span><b>12:26</b></div>
+  </div>
+  <div class="desk">— hover a single dot —</div>
+</div>
+<p class="note">
+  Three dots, three <b>independent</b> hover targets. Hovering the network dot shows only
+  VPN and wifi; the other two stay dots. Most precise, but it asks you to aim at a
+  9px target — which fights the "hover anywhere" simplicity you liked.
+</p>
+
+<h2>H — The bar shows exceptions, not state</h2>
+<p class="note" style="margin-bottom:16px">
+  Two ideas that turn out to be one. <b>If a number doesn't change what you do, it doesn't
+  belong on the bar</b> — CPU at 80% only ever means "go look in btop", so the bar should be
+  the trigger, not the readout. And <b>a pill implies contents</b>, so a mostly-empty one reads
+  as a broken layout. Drop both and the bar gets much quieter.
+</p>
+
+<div class="tag">H1 · nothing but exceptions</div>
+<div class="stage">
+  <div class="bar" id="barH1">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+    <span id="H1_alerts" style="display:flex;gap:10px;align-items:center"></span>
+    <span id="H1_kube" class="kube prod" style="margin-left:4px">rs-prod</span>
+    <span class="clock" style="margin-left:14px">Sat 01 Aug<span class="sep">•</span><b>12:26</b></span>
+  </div>
+  <div class="desk">— healthy system: workspaces, cluster, clock —</div>
+</div>
+<p class="note">
+  No pills at all — <b>type and icons sitting directly on the bar</b>. When everything is fine
+  you see three things. Mute the mic or drop the battery and exactly one icon appears,
+  where nothing was before. The empty space is genuinely empty rather than reserved,
+  so it never looks like something failed to load.
+</p>
+
+<div class="tag" style="margin-top:26px">H2 · exceptions + a single status dot</div>
+<div class="stage">
+  <div class="bar" id="barH2">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+    <span id="H2_alerts" style="display:flex;gap:10px;align-items:center"></span>
+    <span id="H2_kube" class="kube prod" style="margin-left:4px">rs-prod</span>
+    <span id="H2_dot" style="margin-left:12px;cursor:pointer" title="click for status"></span>
+    <span class="clock" style="margin-left:12px">Sat 01 Aug<span class="sep">•</span><b>12:26</b></span>
+  </div>
+  <div class="desk">— hover the dot —</div>
+</div>
+<p class="note">
+  H1 plus <b>one dot</b> as the entry point to everything else — status, audio devices,
+  network, resources. Green when the system is healthy, coloured when it isn't.
+  It's a door, not a display: the whole readout lives behind it, and the bar
+  keeps a single fixed affordance you can aim at or bind a key to.
+</p>
+
+<div class="tag" style="margin-top:26px">H3 · resources only when they're a problem</div>
+<div class="stage">
+  <div class="bar" id="barH3">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+    <span id="H3_alerts" style="display:flex;gap:10px;align-items:center"></span>
+    <span id="H3_kube" class="kube prod" style="margin-left:4px">rs-prod</span>
+    <span id="H3_dot" style="margin-left:12px;cursor:pointer"></span>
+    <span class="clock" style="margin-left:12px">Sat 01 Aug<span class="sep">•</span><b>12:26</b></span>
+  </div>
+  <div class="desk">— push CPU past 80 or MEM past 85 —</div>
+</div>
+<p class="note">
+  Same as H2, but resources earn a place on the bar <b>only when they cross a line worth
+  interrupting you for</b> — and then they show the number, because at that point the number
+  is the diagnosis. Below the line they live in the menu with everything else.
+  Drag the CPU slider past 80 to see it appear.
+</p>
+
+<div class="tag" style="margin-top:26px">the menu behind the dot</div>
+<div class="cols" style="margin-top:14px">
+  <div>
+    <div class="pop" style="width:320px">
+      <div class="sec">Resources</div>
+      <div class="row" style="cursor:default">
+        <span class="ico">󰍛</span><span class="name">CPU</span>
+        <span class="track" style="flex:0 0 90px"><i id="M_cpu" style="width:18%"></i></span>
+        <span class="pct" id="M_cpuv">18%</span>
+      </div>
+      <div class="row" style="cursor:default">
+        <span class="ico">󰘚</span><span class="name">Memory</span>
+        <span class="track" style="flex:0 0 90px"><i id="M_mem" style="width:54%;background:var(--teal)"></i></span>
+        <span class="pct" id="M_memv">54%</span>
+      </div>
+      <div class="row"><span class="ico"></span><span class="name">Open btop</span><span class="key">b</span></div>
+      <div class="sec">Output</div>
+      <div class="slider">
+        <span class="ico"></span><span class="track"><i style="width:65%"></i></span><span class="pct">65%</span>
+      </div>
+      <div class="row"><span class="ico dot">●</span><span class="name">Built-in Audio</span></div>
+      <div class="row"><span class="ico"> </span><span class="name">WH-1000XM4</span><span class="key">2</span></div>
+      <div class="sec">Input</div>
+      <div class="slider">
+        <span class="ico"></span><span class="track"><i style="width:40%"></i></span><span class="pct">40%</span>
+      </div>
+      <div class="sec">Network &amp; devices</div>
+      <div class="row"><span class="ico ok">󰤨</span><span class="name">Ziggo8410435</span><span class="key">w</span></div>
+      <div class="row"><span class="ico vpn">󰦝</span><span class="name">tailscale0</span></div>
+      <div class="row"><span class="ico good"></span><span class="name">WH-1000XM4</span><span class="key">c</span></div>
+    </div>
+  </div>
+  <div>
+    <p class="note" style="margin-top:8px">
+      Everything the bar used to display permanently now lives here, one keystroke or click away.
+      <b>Resources get a real readout</b> — a bar chart rather than a percentage — because
+      here there's room to show memory creeping up over time, which is the thing you
+      actually wanted to see.
+    </p>
+    <p class="note" style="margin-top:12px">
+      And since the diagnosis always ends in btop, <b>the menu offers it directly.</b>
+      The bar notices, the menu contextualises, btop investigates — each does the part it's good at.
+    </p>
+    <p class="note" style="margin-top:12px">
+      This is also where the pills come back and make sense: in the menu the rows are
+      <b>genuinely full</b>, so containers are doing real work.
+    </p>
+  </div>
+</div>
+
+<h2>I — Three dots that keep their meaning</h2>
+<p class="note" style="margin-bottom:16px">
+  H threw out the thing that made the dots worth having: <b>three positions carrying three
+  colours is real information</b>, and expanding them taught you what each position meant.
+  One dot can't do that — it's a button with a status light. So: keep H's rule that resources
+  live behind the menu, but keep G1's three dots as the resting form.
+</p>
+
+<div class="tag pick">I1 · three dots, expanding in place</div>
+<div class="stage">
+  <div class="bar" id="barI1">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+    <span id="I1_kube" class="kube prod" style="margin-right:14px">rs-prod</span>
+    <span id="I1_slot" style="position:relative;display:inline-flex;align-items:center;justify-content:flex-end;height:26px;width:132px">
+      <span id="I1_dots" class="xfade" style="position:absolute;right:0;display:flex;align-items:center;gap:7px"></span>
+      <span id="I1_icons" class="xfade" style="position:absolute;right:0;display:flex;align-items:center;gap:9px"></span>
+    </span>
+    <span class="clock" style="margin-left:14px">Sat 01 Aug<span class="sep">•</span><b>12:26</b></span>
+  </div>
+  <div class="desk">— hover the bar —</div>
+</div>
+<p class="note">
+  <b>Network · audio · power</b>, always in that order, so a colour in the first position
+  always means the same kind of thing. Hover expands them into the icons they stand for —
+  right-aligned, so the dots sit exactly where the icons will appear and the mapping is
+  visible rather than memorised. No pills; no resources; the menu holds the rest.
+</p>
+
+<div class="tag" style="margin-top:26px">I2 · dots grow into their own group</div>
+<div class="stage">
+  <div class="bar" id="barI2">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+    <span id="I2_kube" class="kube prod" style="margin-right:14px">rs-prod</span>
+    <span id="I2_groups" style="display:inline-flex;align-items:center;gap:12px;justify-content:flex-end"></span>
+    <span class="clock" style="margin-left:14px">Sat 01 Aug<span class="sep">•</span><b>12:26</b></span>
+  </div>
+  <div class="desk">— hover the bar —</div>
+</div>
+<p class="note">
+  Same three dots, but each expands into <b>its own icons in its own position</b> rather than
+  the whole row swapping at once. The link between a dot and what it stood for is
+  unmistakable, because the dot is replaced by exactly the things it was summarising.
+</p>
+
+<div class="tag" style="margin-top:26px">I3 · a dot per group, abnormal members break out</div>
+<div class="stage">
+  <div class="bar" id="barI3">
+    <div class="ws active"><span class="app focused"></span></div>
+    <div class="ws"><span class="app"></span></div>
+    <div class="ws"><span class="idx">3</span></div>
+    <div class="spacer"></div>
+    <span id="I3_kube" class="kube prod" style="margin-right:14px">rs-prod</span>
+    <span id="I3_groups" style="display:inline-flex;align-items:center;gap:12px;justify-content:flex-end"></span>
+    <span class="clock" style="margin-left:14px">Sat 01 Aug<span class="sep">•</span><b>12:26</b></span>
+  </div>
+  <div class="desk">— mute the mic; only audio expands —</div>
+</div>
+<p class="note">
+  The strictest reading of "show exceptions": a group whose members are all fine stays a dot,
+  and a group with a problem <b>shows only the member that has one</b>. Mute the mic and the
+  audio dot becomes a mic icon while network and power stay dots. Never summarises a
+  problem away, never draws anything healthy.
+</p>
+
+<h2>What the three dots actually say</h2>
+<p class="note" style="margin-bottom:14px">
+  Position is fixed, so each slot always reports on the same thing — that's what makes a
+  colour readable at a glance instead of needing a hover.
+</p>
+<div class="cols" style="gap:18px">
+  <div class="ctl">
+    <div class="lbl">Position 1 · network</div>
+    <p class="note" style="font-size:13px;margin:0">
+      <span class="ico vpn">●</span> VPN up &nbsp;
+      <span class="ico ok">●</span> wifi on, no VPN &nbsp;
+      <span class="ico off">●</span> wifi off
+    </p>
+  </div>
+  <div class="ctl">
+    <div class="lbl">Position 2 · audio</div>
+    <p class="note" style="font-size:13px;margin:0">
+      <span class="ico ok">●</span> normal &nbsp;
+      <span class="ico good">●</span> on headset &nbsp;
+      <span class="ico muted">●</span> muted &nbsp;
+      <span class="ico off">●</span> bluetooth off
+    </p>
+  </div>
+  <div class="ctl">
+    <div class="lbl">Position 3 · power</div>
+    <p class="note" style="font-size:13px;margin:0">
+      <span class="ico ok">●</span> on battery, fine &nbsp;
+      <span class="ico good">●</span> charging &nbsp;
+      <span class="ico warn">●</span> low &nbsp;
+      <span class="ico crit">●</span> critical
+    </p>
+  </div>
+</div>
+<p class="note" style="margin-top:14px">
+  The rule that keeps this honest: <b>a dot takes the worst state in its group.</b> A summary
+  must never look calmer than the thing it summarises, so a muted mic turns the audio dot
+  red even though the other two members are fine.
+</p>
+
+<h2>How this resolved</h2>
+<p class="note">
+  The layout-shift problem never had a good answer because the question was wrong.
+  A–G all assumed the bar's job is to <b>display state</b>, and then argued about how to
+  compress it: collapse it (shifts), reserve it (leaves holes), dim it (F2), shrink it (G2).
+  Every one of those is a way to fit something that shouldn't have been there.
+</p>
+<p class="note" style="margin-top:12px">
+  <b>Ask what each element changes and most of them don't survive.</b> CPU at 80% doesn't
+  tell you what to do — it tells you to open btop. So the bar wants the <i>trigger</i>,
+  not the readout, and a permanent readout is rent paid for an occasional signal.
+  Once resources move behind a menu, the pills lose their contents, and once the pills
+  are empty they stop earning their container — which is exactly the thing you noticed.
+</p>
+<p class="note" style="margin-top:12px">
+  H then over-applied it. Collapsing to <b>one</b> dot didn't just hide the readout, it
+  destroyed the readout — three positions carrying three colours is information you can
+  read without acting, and one dot is a button with a status light.
+</p>
+<p class="note" style="margin-top:12px">
+  I then failed in a way worth naming: <b>dense and starved at the same time.</b> Packed
+  glyphs that still need a legend. That pairing is the signature of optimising for width —
+  which I did for eight sections straight, on a bar whose entire middle is empty.
+</p>
+<p class="note" style="margin-top:12px">
+  <b>J is the correction, and it's a different currency: space, not width.</b> Nothing is
+  abstracted — no dot stands in for a thing, so nothing needs a legend. The battery is a
+  shape that empties. Items sit ~14px apart instead of 7px. It reads at a glance because
+  there's air around each element, not because you learned what position 2 means.
+</p>
+<p class="note" style="margin-top:12px">
+  <b>J3 is what I'd build.</b> J1's literal shapes and generous spacing, with hairline rules
+  instead of pills — your point that a container only works when it's full is exactly right,
+  and a rule separates without enclosing, so it can never look starved.
+  Resources stay behind the menu (H's rule survives), and appear on the bar only when
+  they cross a line worth interrupting for.
+</p>
+<p class="note" style="margin-top:12px">
+  What actually survived the whole session: <b>the exception rule</b> (draw what needs you),
+  <b>no permanent readouts</b> for numbers that only mean "go look", and
+  <b>no container without contents</b>. The dots, the pills, the reserved slots and the
+  crossfades were all machinery invented to fix a width problem that didn't exist.
+</p>
+
+<h2>Still open</h2>
+<p class="note">
+  <b>The clock.</b> <code>Sat 01 Aug • 12:26</code> is the widest thing on the bar by some margin.
+  Dropping the date to <code>12:26</code> buys back real space, and the date is a keystroke away
+  in any calendar — but it's also the one thing you read without meaning to.
+</p>
+<p class="note" style="margin-top:12px">
+  <b>Battery percentage.</b> Currently always drawn next to its icon inside the cluster.
+  It could follow the same rule as CPU/mem — number hidden until low or hovered — which
+  would make the resting cluster tighter still.
+</p>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const on = id => $(id).checked;
+
+  // Nerd Font glyphs, matching what's actually installed on this machine.
+  const G = {
+    micOn: "󰍬", micOff: "󰍭",
+    sndOn: "󰕾", sndOff: "󰝟", sndBt: "󰋋",
+    wifiOn: "󰤨", wifiOff: "󰤭",
+    btOn: "󰂯", btOff: "󰂲", btConn: "󰂱",
+    vpn: "󰦝",
+    battFull: "󰂁", battLow: "󰁻", battChg: "󰂄",
+    cpu: "󰍛", mem: "󰘚",
+  };
+
+  function paint(p) {
+    const cpu = +$("cpu").value, mem = +$("mem").value, batt = +$("batt").value;
+
+    // resource pills: reveal on threshold (hover is pure CSS)
+    for (const [k, v, lim] of [["cpu", cpu, 60], ["mem", mem, 80]]) {
+      const val = $(`${p}_${k}Val`), ico = $(`${p}_${k}Ico`);
+      if (!val) continue;
+      val.textContent = v + "%";
+      val.classList.toggle("shown", v > lim);
+      const heat = v >= 80 ? "crit" : v >= 60 ? "warn" : "ok";
+      ico.className = "ico " + heat;
+      val.className = "reveal " + heat + (v > lim ? " shown" : "");
+    }
+
+    const set = (id, glyph, cls) => {
+      const el = $(id); if (!el) return;
+      el.textContent = glyph; el.className = "ico " + cls;
+    };
+
+    set(`${p}_mic`, on("micMuted") ? G.micOff : G.micOn, on("micMuted") ? "muted" : "ok");
+    set(`${p}_snd`,
+      on("sinkMuted") ? G.sndOff : (on("btAudio") ? G.sndBt : G.sndOn),
+      on("sinkMuted") ? "muted" : "ok");
+    set(`${p}_wifi`, on("wifiOff") ? G.wifiOff : G.wifiOn, on("wifiOff") ? "off" : "ok");
+    set(`${p}_bt`,
+      on("btOff") ? G.btOff : (on("btAudio") ? G.btConn : G.btOn),
+      on("btOff") ? "off" : (on("btAudio") ? "good" : "ok"));
+
+    const vpnEl = $(`${p}_vpn`);
+    if (vpnEl) { vpnEl.style.display = on("vpnOn") ? "" : "none"; vpnEl.className = "ico vpn"; }
+
+    const bIco = batt <= 20 ? G.battLow : (on("charging") ? G.battChg : G.battFull);
+    const bCls = on("charging") ? "good" : (batt <= 15 ? "crit" : batt <= 25 ? "warn" : "ok");
+    set(`${p}_batt`, bIco, bCls);
+    const bv = $(`${p}_battVal`);
+    if (bv) { bv.textContent = batt + "%"; bv.className = "val " + (bCls === "ok" ? "off" : bCls); }
+
+    const kube = $(`${p}_kube`);
+    if (kube) {
+      kube.textContent = on("prod") ? "rs-prod" : "rs-stag";
+      kube.className = "kube" + (on("prod") ? " prod" : "");
+    }
+  }
+
+  // Variant B: draw only what is abnormal.
+  function paintB() {
+    const cpu = +$("cpu").value, mem = +$("mem").value, batt = +$("batt").value;
+    const out = [];
+    const add = (g, c, extra = "") =>
+      out.push(`<span class="ico ${c}">${g}</span>${extra}`);
+
+    if (on("micMuted")) add(G.micOff, "muted");
+    if (on("sinkMuted")) add(G.sndOff, "muted");
+    if (on("wifiOff")) add(G.wifiOff, "off");
+    if (on("btOff")) add(G.btOff, "off");
+    if (on("vpnOn")) add(G.vpn, "vpn");
+    if (cpu >= 60) add(G.cpu, cpu >= 80 ? "crit" : "warn",
+      `<span class="val ${cpu >= 80 ? "crit" : "warn"}">${cpu}%</span>`);
+    if (mem >= 80) add(G.mem, "crit", `<span class="val crit">${mem}%</span>`);
+    if (batt <= 25 && !on("charging")) add(G.battLow, batt <= 15 ? "crit" : "warn",
+      `<span class="val ${batt <= 15 ? "crit" : "warn"}">${batt}%</span>`);
+    if (on("charging")) add(G.battChg, "good");
+
+    const el = $("B_alerts");
+    el.innerHTML = out.join("");
+    el.style.gap = "8px";
+    el.style.display = "flex";
+    el.style.alignItems = "center";
+
+    const kube = $("B_kube");
+    kube.textContent = on("prod") ? "rs-prod" : "rs-stag";
+    kube.className = "kube" + (on("prod") ? " prod" : "");
+  }
+
+  // Variant C: three dots at rest; anything abnormal escapes the cluster.
+  function paintC() {
+    const cpu = +$("cpu").value, mem = +$("mem").value, batt = +$("batt").value;
+    const bad = on("micMuted") || on("sinkMuted") || on("wifiOff") || on("btOff")
+      || (batt <= 25 && !on("charging"));
+
+    const rest = $("C_rest");
+    if (bad) {
+      const out = [];
+      if (on("micMuted")) out.push(`<span class="ico muted">${G.micOff}</span>`);
+      if (on("sinkMuted")) out.push(`<span class="ico muted">${G.sndOff}</span>`);
+      if (on("wifiOff")) out.push(`<span class="ico off">${G.wifiOff}</span>`);
+      if (on("btOff")) out.push(`<span class="ico off">${G.btOff}</span>`);
+      if (batt <= 25 && !on("charging"))
+        out.push(`<span class="ico ${batt <= 15 ? "crit" : "warn"}">${G.battLow}</span>`);
+      out.push(`<span class="ico off" style="font-size:9px">●●</span>`);
+      rest.innerHTML = out.join("");
+    } else {
+      const vpnDot = on("vpnOn") ? "vpn" : "off";
+      rest.innerHTML =
+        `<span class="ico ${vpnDot}" style="font-size:9px">●</span>` +
+        `<span class="ico ok" style="font-size:9px">●</span>` +
+        `<span class="ico ok" style="font-size:9px">●</span>`;
+    }
+    paint("C");
+  }
+
+  const cluster = $("C_cluster");
+  cluster.addEventListener("mouseenter", () => {
+    $("C_rest").style.display = "none";
+    $("C_full").style.display = "flex";
+  });
+  cluster.addEventListener("mouseleave", () => {
+    $("C_rest").style.display = "flex";
+    $("C_full").style.display = "none";
+  });
+
+  // ---- Variant D: cluster like C, resources like B, revealed by bar-wide hover ----
+  let dHover = false;
+
+  function paintD() {
+    const cpu = +$("cpu").value, mem = +$("mem").value, batt = +$("batt").value;
+
+    // Resources follow B: silent below threshold, but bar hover also reveals them.
+    const res = [];
+    const push = (g, v, cls) =>
+      res.push(`<span class="ico ${cls}">${g}</span><span class="val ${cls}">${v}%</span>`);
+    if (cpu >= 60 || dHover) push(G.cpu, cpu, cpu >= 80 ? "crit" : cpu >= 60 ? "warn" : "off");
+    if (mem >= 80 || dHover) push(G.mem, mem, mem >= 80 ? "crit" : "off");
+    $("D_res").innerHTML = res.join("");
+
+    const bad = on("micMuted") || on("sinkMuted") || on("wifiOff") || on("btOff")
+      || (batt <= 25 && !on("charging"));
+
+    if (dHover) {
+      $("D_rest").style.display = "none";
+      $("D_full").style.display = "flex";
+    } else {
+      $("D_rest").style.display = "flex";
+      $("D_full").style.display = "none";
+      const out = [];
+      if (on("micMuted")) out.push(`<span class="ico muted">${G.micOff}</span>`);
+      if (on("sinkMuted")) out.push(`<span class="ico muted">${G.sndOff}</span>`);
+      if (on("wifiOff")) out.push(`<span class="ico off">${G.wifiOff}</span>`);
+      if (on("btOff")) out.push(`<span class="ico off">${G.btOff}</span>`);
+      if (batt <= 25 && !on("charging"))
+        out.push(`<span class="ico ${batt <= 15 ? "crit" : "warn"}">${G.battLow}</span>`);
+      if (bad) {
+        out.push(`<span class="ico off" style="font-size:9px">●●</span>`);
+      } else {
+        out.push(`<span class="ico ${on("vpnOn") ? "vpn" : "off"}" style="font-size:9px">●</span>`);
+        out.push(`<span class="ico ok" style="font-size:9px">●</span>`);
+        out.push(`<span class="ico ok" style="font-size:9px">●</span>`);
+      }
+      $("D_rest").innerHTML = out.join("");
+    }
+    paint("D");
+  }
+
+  let dTimer = null;
+  const barD = $("barD");
+  barD.addEventListener("mouseenter", () => {
+    clearTimeout(dTimer);
+    dTimer = setTimeout(() => { dHover = true; paintD(); }, +$("delay").value);
+  });
+  barD.addEventListener("mouseleave", () => {
+    clearTimeout(dTimer);
+    dHover = false; paintD();
+  });
+
+  // ---- Variant E: three stability strategies ----
+
+  // Shared: what the status icons are, in fixed order.
+  function statusIcons(hovered) {
+    const batt = +$("batt").value;
+    const items = [];
+    if (on("vpnOn")) items.push([G.vpn, "vpn"]); else items.push([G.vpn, "off"]);
+    items.push([on("wifiOff") ? G.wifiOff : G.wifiOn, on("wifiOff") ? "off" : "ok"]);
+    items.push([on("btOff") ? G.btOff : (on("btAudio") ? G.btConn : G.btOn),
+      on("btOff") ? "off" : (on("btAudio") ? "good" : "ok")]);
+    items.push([on("micMuted") ? G.micOff : G.micOn, on("micMuted") ? "muted" : "ok"]);
+    items.push([on("sinkMuted") ? G.sndOff : (on("btAudio") ? G.sndBt : G.sndOn),
+      on("sinkMuted") ? "muted" : "ok"]);
+    items.push([batt <= 20 ? G.battLow : (on("charging") ? G.battChg : G.battFull),
+      on("charging") ? "good" : (batt <= 15 ? "crit" : batt <= 25 ? "warn" : "ok")]);
+    return items;
+  }
+
+  // Which statuses are "abnormal" — the ones that escape a collapsed cluster.
+  function abnormal() {
+    const batt = +$("batt").value;
+    const out = [];
+    if (on("micMuted")) out.push([G.micOff, "muted"]);
+    if (on("sinkMuted")) out.push([G.sndOff, "muted"]);
+    if (on("wifiOff")) out.push([G.wifiOff, "off"]);
+    if (on("btOff")) out.push([G.btOff, "off"]);
+    if (batt <= 25 && !on("charging"))
+      out.push([G.battLow, batt <= 15 ? "crit" : "warn"]);
+    return out;
+  }
+
+  const span = ([g, c]) => `<span class="ico ${c}">${g}</span>`;
+
+  function resHtml(hovered, reserved) {
+    const cpu = +$("cpu").value, mem = +$("mem").value;
+    const out = [];
+    const one = (g, v, lim, hot) => {
+      const show = v >= lim || hovered;
+      const cls = v >= hot ? "crit" : v >= lim ? "warn" : "off";
+      if (reserved) {
+        return `<span class="slot ${show ? "" : "hidden"}">` +
+          `<span class="ico ${cls}">${g}</span><span class="val ${cls}">${v}%</span></span>`;
+      }
+      return show ? `<span class="ico ${cls}">${g}</span><span class="val ${cls}">${v}%</span>` : "";
+    };
+    out.push(one(G.cpu, cpu, 60, 80));
+    out.push(one(G.mem, mem, 80, 80));
+    return out.join(" ");
+  }
+
+  // E1 — right-anchored, grows leftwards, no reservation.
+  let e1Hover = false;
+  function paintE1() {
+    $("E1_res").innerHTML = resHtml(e1Hover, false);
+    $("E1_kube").textContent = on("prod") ? "rs-prod" : "rs-stag";
+    $("E1_kube").className = "kube" + (on("prod") ? " prod" : "");
+    if (e1Hover) {
+      $("E1_rest").style.display = "none";
+      $("E1_full").style.display = "flex";
+      $("E1_full").innerHTML = statusIcons(true).map(span).join("");
+    } else {
+      $("E1_rest").style.display = "flex";
+      $("E1_full").style.display = "none";
+      const bad = abnormal();
+      $("E1_rest").innerHTML = bad.length
+        ? bad.map(span).join("") + `<span class="ico off" style="font-size:9px">●●</span>`
+        : `<span class="ico ${on("vpnOn") ? "vpn" : "off"}" style="font-size:9px">●</span>` +
+          `<span class="ico ok" style="font-size:9px">●</span>`.repeat(2);
+    }
+  }
+
+  // E2 — every slot keeps its width; contents fade in place.
+  let e2Hover = false;
+  function paintE2() {
+    $("E2_res").innerHTML = resHtml(e2Hover, true);
+    $("E2_kube").textContent = on("prod") ? "rs-prod" : "rs-stag";
+    $("E2_kube").className = "kube" + (on("prod") ? " prod" : "");
+    // Same six icons always occupy the slot; collapsed just dims the healthy ones.
+    $("E2_icons").innerHTML = statusIcons(true).map(([g, c], i) => {
+      const bad = c !== "ok";
+      const visible = e2Hover || bad;
+      return `<span class="slot ${visible ? "" : "hidden"}"><span class="ico ${c}">${g}</span></span>`;
+    }).join("");
+  }
+
+  // E3 — no collapsing at all.
+  function paintE3() {
+    $("E3_res").innerHTML = resHtml(false, true);
+    $("E3_kube").textContent = on("prod") ? "rs-prod" : "rs-stag";
+    $("E3_kube").className = "kube" + (on("prod") ? " prod" : "");
+    const ids = ["E3_vpn", "E3_wifi", "E3_bt", "E3_mic", "E3_snd", "E3_batt"];
+    statusIcons(true).forEach(([g, c], i) => {
+      const el = $(ids[i]);
+      el.textContent = g; el.className = "ico " + c;
+    });
+  }
+
+  for (const [bar, set, repaint] of [
+    ["barE1", v => e1Hover = v, () => paintE1()],
+    ["barE2", v => e2Hover = v, () => paintE2()],
+  ]) {
+    let t = null;
+    const el = $(bar);
+    el.addEventListener("mouseenter", () => {
+      clearTimeout(t);
+      t = setTimeout(() => { set(true); repaint(); }, +$("delay").value);
+    });
+    el.addEventListener("mouseleave", () => {
+      clearTimeout(t); set(false); repaint();
+    });
+  }
+
+  // ---- Variant F: reserved space that reads as intentional ----
+
+  // F1: fixed-width capsule, contents fade in place.
+  let f1Hover = false;
+  function paintF1() {
+    $("F1_res").innerHTML = resHtml(f1Hover, true);
+    $("F1_kube").textContent = on("prod") ? "rs-prod" : "rs-stag";
+    $("F1_kube").className = "kube" + (on("prod") ? " prod" : "");
+    $("F1_icons").innerHTML = statusIcons(true).map(([g, c]) => {
+      const visible = f1Hover || c !== "ok";
+      return `<span class="slot ${visible ? "" : "hidden"}"><span class="ico ${c}">${g}</span></span>`;
+    }).join("");
+  }
+
+  // F2: nothing hidden — healthy sits dim, abnormal is full strength.
+  let f2Hover = false;
+  function paintF2() {
+    const cpu = +$("cpu").value, mem = +$("mem").value;
+    const dim = v => `opacity:${v}`;
+    const res = [];
+    for (const [g, v, lim, hot] of [[G.cpu, cpu, 60, 80], [G.mem, mem, 80, 80]]) {
+      const loud = v >= lim;
+      const cls = v >= hot ? "crit" : loud ? "warn" : "ok";
+      res.push(`<span class="slot" style="${dim(loud || f2Hover ? 1 : 0.35)}">` +
+        `<span class="ico ${cls}">${g}</span></span>`);
+    }
+    $("F2_res").innerHTML = res.join(" ");
+    $("F2_kube").textContent = on("prod") ? "rs-prod" : "rs-stag";
+    $("F2_kube").className = "kube" + (on("prod") ? " prod" : "");
+    $("F2_icons").innerHTML = statusIcons(true).map(([g, c]) => {
+      const loud = c !== "ok";
+      return `<span class="slot" style="${dim(loud || f2Hover ? 1 : 0.35)}">` +
+        `<span class="ico ${c}">${g}</span></span>`;
+    }).join("");
+  }
+
+  // F3: F2's dimming, but resource numbers reveal into reserved space.
+  let f3Hover = false;
+  function paintF3() {
+    const cpu = +$("cpu").value, mem = +$("mem").value;
+    const res = [];
+    for (const [g, v, lim, hot] of [[G.cpu, cpu, 60, 80], [G.mem, mem, 80, 80]]) {
+      const loud = v >= lim;
+      const show = loud || f3Hover;
+      const cls = v >= hot ? "crit" : loud ? "warn" : "ok";
+      res.push(
+        `<span style="display:flex;align-items:center;gap:3px">` +
+        `<span class="ico ${cls}" style="opacity:${loud || f3Hover ? 1 : 0.35};transition:opacity 160ms">${g}</span>` +
+        `<span class="val ${cls} slot ${show ? "" : "hidden"}" style="width:30px;text-align:right">${v}%</span>` +
+        `</span>`);
+    }
+    $("F3_res").innerHTML = res.join("");
+    $("F3_kube").textContent = on("prod") ? "rs-prod" : "rs-stag";
+    $("F3_kube").className = "kube" + (on("prod") ? " prod" : "");
+    $("F3_icons").innerHTML = statusIcons(true).map(([g, c]) => {
+      const loud = c !== "ok";
+      return `<span class="slot" style="opacity:${loud || f3Hover ? 1 : 0.35}">` +
+        `<span class="ico ${c}">${g}</span></span>`;
+    }).join("");
+  }
+
+  for (const [bar, set, repaint] of [
+    ["barF1", v => f1Hover = v, () => paintF1()],
+    ["barF2", v => f2Hover = v, () => paintF2()],
+    ["barF3", v => f3Hover = v, () => paintF3()],
+  ]) {
+    let t = null;
+    const el = $(bar);
+    el.addEventListener("mouseenter", () => {
+      clearTimeout(t);
+      t = setTimeout(() => { set(true); repaint(); }, +$("delay").value);
+    });
+    el.addEventListener("mouseleave", () => {
+      clearTimeout(t); set(false); repaint();
+    });
+  }
+
+  // ---- Variant G: dots as the resting form of the icons ----
+
+  // Status split into the three things a dot can summarise.
+  // Worst state in a group is what its dot shows — a summary must never
+  // look calmer than the thing it summarises.
+  function groups() {
+    const batt = +$("batt").value;
+    const rank = { crit: 3, muted: 3, warn: 2, off: 1, good: 0, ok: 0, vpn: 0 };
+    const net = [
+      [G.vpn, on("vpnOn") ? "vpn" : "off", on("vpnOn")],
+      [on("wifiOff") ? G.wifiOff : G.wifiOn, on("wifiOff") ? "off" : "ok", true],
+    ];
+    const audio = [
+      [on("btOff") ? G.btOff : (on("btAudio") ? G.btConn : G.btOn),
+        on("btOff") ? "off" : (on("btAudio") ? "good" : "ok"), true],
+      [on("micMuted") ? G.micOff : G.micOn, on("micMuted") ? "muted" : "ok", true],
+      [on("sinkMuted") ? G.sndOff : (on("btAudio") ? G.sndBt : G.sndOn),
+        on("sinkMuted") ? "muted" : "ok", true],
+    ];
+    const power = [
+      [batt <= 20 ? G.battLow : (on("charging") ? G.battChg : G.battFull),
+        on("charging") ? "good" : (batt <= 15 ? "crit" : batt <= 25 ? "warn" : "ok"), true],
+    ];
+    const summarise = g => {
+      let worst = g[0][1], best = 0;
+      for (const [, c] of g) if ((rank[c] || 0) > best) { best = rank[c] || 0; worst = c; }
+      return { cls: worst, alarm: best >= 2, items: g };
+    };
+    return [summarise(net), summarise(audio), summarise(power)];
+  }
+
+  const dot = cls => `<span class="ico ${cls}" style="font-size:9px">●</span>`;
+
+  // G1 — dots and icons share one box, crossfaded.
+  let g1Hover = false;
+  function paintG1() {
+    $("G1_res").innerHTML = resHtml(g1Hover, true);
+    $("G1_kube").textContent = on("prod") ? "rs-prod" : "rs-stag";
+    $("G1_kube").className = "kube" + (on("prod") ? " prod" : "");
+
+    const gs = groups();
+    const anyAlarm = gs.some(g => g.alarm);
+    // An alarm forces the detailed view: a summary must not hide a problem.
+    const showIcons = g1Hover || anyAlarm;
+
+    $("G1_dots").innerHTML = gs.map(g => dot(g.cls)).join("");
+    $("G1_icons").innerHTML = gs.flatMap(g => g.items)
+      .map(([g_, c]) => `<span class="ico ${c}">${g_}</span>`).join("");
+
+    $("G1_dots").classList.toggle("out", showIcons);
+    $("G1_icons").classList.toggle("out", !showIcons);
+  }
+
+  // G2 — the icons themselves shrink to dot size when calm.
+  let g2Hover = false;
+  function paintG2() {
+    $("G2_res").innerHTML = resHtml(g2Hover, true);
+    $("G2_kube").textContent = on("prod") ? "rs-prod" : "rs-stag";
+    $("G2_kube").className = "kube" + (on("prod") ? " prod" : "");
+
+    $("G2_icons").innerHTML = statusIcons(true).map(([g_, c]) => {
+      const loud = c !== "ok";
+      const big = g2Hover || loud;
+      // Calm icons shrink and dim; they never leave, so nothing reflows.
+      return `<span class="ico shrink ${c}" style="width:15px;text-align:center;` +
+        `font-size:${big ? 14 : 7}px;opacity:${big ? 1 : 0.45}">${big ? g_ : "●"}</span>`;
+    }).join("");
+  }
+
+  // G3 — per-group dots, each its own hover target.
+  const g3Open = [false, false, false];
+  function paintG3() {
+    $("G3_res").innerHTML = resHtml(false, true);
+    $("G3_kube").textContent = on("prod") ? "rs-prod" : "rs-stag";
+    $("G3_kube").className = "kube" + (on("prod") ? " prod" : "");
+
+    $("G3_groups").innerHTML = groups().map((g, i) => {
+      const open = g3Open[i] || g.alarm;
+      const body = open
+        ? g.items.map(([g_, c]) => `<span class="ico ${c}">${g_}</span>`).join("")
+        : dot(g.cls);
+      return `<span class="g3g" data-i="${i}" style="display:flex;gap:8px;align-items:center;cursor:default">${body}</span>`;
+    }).join("");
+
+    $("G3_groups").querySelectorAll(".g3g").forEach(el => {
+      const i = +el.dataset.i;
+      el.addEventListener("mouseenter", () => { g3Open[i] = true; paintG3(); });
+      el.addEventListener("mouseleave", () => { g3Open[i] = false; paintG3(); });
+    });
+  }
+
+  for (const [bar, set, repaint] of [
+    ["barG1", v => g1Hover = v, () => paintG1()],
+    ["barG2", v => g2Hover = v, () => paintG2()],
+  ]) {
+    let t = null;
+    const el = $(bar);
+    el.addEventListener("mouseenter", () => {
+      clearTimeout(t);
+      t = setTimeout(() => { set(true); repaint(); }, +$("delay").value);
+    });
+    el.addEventListener("mouseleave", () => {
+      clearTimeout(t); set(false); repaint();
+    });
+  }
+
+  // ---- Variant H: the bar shows exceptions; everything else is behind a menu ----
+
+  // Only things that would make you act. A healthy system renders nothing here.
+  function exceptions(withResources) {
+    const cpu = +$("cpu").value, mem = +$("mem").value, batt = +$("batt").value;
+    const out = [];
+    const add = (g, c, txt = "") =>
+      out.push(`<span class="ico ${c}">${g}</span>` +
+        (txt ? `<span class="val ${c}" style="margin-left:3px">${txt}</span>` : ""));
+
+    if (on("micMuted")) add(G.micOff, "muted");
+    if (on("sinkMuted")) add(G.sndOff, "muted");
+    if (on("wifiOff")) add(G.wifiOff, "off");
+    if (on("btOff")) add(G.btOff, "off");
+    if (batt <= 25 && !on("charging"))
+      add(G.battLow, batt <= 15 ? "crit" : "warn", batt + "%");
+    // Resources only interrupt above a line worth interrupting for.
+    if (withResources) {
+      if (cpu >= 80) add(G.cpu, "crit", cpu + "%");
+      if (mem >= 85) add(G.mem, "crit", mem + "%");
+    }
+    return out.join("");
+  }
+
+  function paintH() {
+    const batt = +$("batt").value;
+    for (const [p, withRes] of [["H1", false], ["H2", false], ["H3", true]]) {
+      const el = $(`${p}_alerts`);
+      if (el) el.innerHTML = exceptions(withRes);
+      const k = $(`${p}_kube`);
+      if (k) {
+        k.textContent = on("prod") ? "rs-prod" : "rs-stag";
+        k.className = "kube" + (on("prod") ? " prod" : "");
+      }
+    }
+    // The single status dot: green when nothing needs you, worst colour when something does.
+    const gs = groups();
+    const alarm = gs.find(g => g.alarm);
+    for (const id of ["H2_dot", "H3_dot"]) {
+      const el = $(id);
+      if (el) el.innerHTML = dot(alarm ? alarm.cls : "good");
+    }
+
+    // menu readouts
+    const cpu = +$("cpu").value, mem = +$("mem").value;
+    if ($("M_cpu")) {
+      $("M_cpu").style.width = cpu + "%";
+      $("M_cpu").style.background = cpu >= 80 ? "var(--red)" : cpu >= 60 ? "var(--yellow)" : "var(--accent)";
+      $("M_cpuv").textContent = cpu + "%";
+      $("M_mem").style.width = mem + "%";
+      $("M_mem").style.background = mem >= 85 ? "var(--red)" : mem >= 70 ? "var(--yellow)" : "var(--teal)";
+      $("M_memv").textContent = mem + "%";
+    }
+  }
+
+  // ---- Variant I: H's exception rule, G1's three dots kept as the resting form ----
+
+  // I1 — whole row crossfades, right-aligned so dots sit where their icons will land.
+  let i1Hover = false;
+  function paintI1() {
+    $("I1_kube").textContent = on("prod") ? "rs-prod" : "rs-stag";
+    $("I1_kube").className = "kube" + (on("prod") ? " prod" : "");
+
+    const gs = groups();
+    const anyAlarm = gs.some(g => g.alarm);
+    const showIcons = i1Hover || anyAlarm;
+
+    $("I1_dots").innerHTML = gs.map(g => dot(g.cls)).join("");
+    $("I1_icons").innerHTML = gs.flatMap(g => g.items)
+      .map(([g_, c]) => `<span class="ico ${c}">${g_}</span>`).join("");
+    $("I1_dots").classList.toggle("out", showIcons);
+    $("I1_icons").classList.toggle("out", !showIcons);
+  }
+
+  // I2 — each dot expands into its own group, in place.
+  let i2Hover = false;
+  function paintI2() {
+    $("I2_kube").textContent = on("prod") ? "rs-prod" : "rs-stag";
+    $("I2_kube").className = "kube" + (on("prod") ? " prod" : "");
+    $("I2_groups").innerHTML = groups().map(g => {
+      const open = i2Hover || g.alarm;
+      const body = open
+        ? g.items.map(([g_, c]) => `<span class="ico ${c}">${g_}</span>`).join("")
+        : dot(g.cls);
+      return `<span style="display:inline-flex;gap:8px;align-items:center">${body}</span>`;
+    }).join("");
+  }
+
+  // I3 — only the member that has a problem breaks out of its dot.
+  let i3Hover = false;
+  function paintI3() {
+    $("I3_kube").textContent = on("prod") ? "rs-prod" : "rs-stag";
+    $("I3_kube").className = "kube" + (on("prod") ? " prod" : "");
+    $("I3_groups").innerHTML = groups().map(g => {
+      if (i3Hover) {
+        return `<span style="display:inline-flex;gap:8px;align-items:center">` +
+          g.items.map(([g_, c]) => `<span class="ico ${c}">${g_}</span>`).join("") + `</span>`;
+      }
+      // Draw only the members that actually need attention; otherwise stay a dot.
+      const bad = g.items.filter(([, c]) => c !== "ok" && c !== "good" && c !== "vpn");
+      const body = bad.length
+        ? bad.map(([g_, c]) => `<span class="ico ${c}">${g_}</span>`).join("")
+        : dot(g.cls);
+      return `<span style="display:inline-flex;gap:8px;align-items:center">${body}</span>`;
+    }).join("");
+  }
+
+  for (const [bar, set, repaint] of [
+    ["barI1", v => i1Hover = v, () => paintI1()],
+    ["barI2", v => i2Hover = v, () => paintI2()],
+    ["barI3", v => i3Hover = v, () => paintI3()],
+  ]) {
+    let t = null;
+    const el = $(bar);
+    el.addEventListener("mouseenter", () => {
+      clearTimeout(t);
+      t = setTimeout(() => { set(true); repaint(); }, +$("delay").value);
+    });
+    el.addEventListener("mouseleave", () => {
+      clearTimeout(t); set(false); repaint();
+    });
+  }
+
+  // ---- Variant J: space as the material; literal shapes; no abstraction layer ----
+
+  // A battery you read by shape first, number second.
+  function battery() {
+    const v = +$("batt").value, chg = on("charging");
+    const cls = chg ? "good" : v <= 15 ? "crit" : v <= 25 ? "warn" : "ok";
+    return `<span class="batt ${cls}">` +
+      `<span class="body"><span class="fill" style="width:${Math.max(2, (v / 100) * 21)}px"></span></span>` +
+      (chg ? `<span class="bolt"></span>` : "") +
+      `<span class="num">${v}%</span></span>`;
+  }
+
+  // Only what's true, drawn literally. Healthy things that carry no information
+  // (bluetooth idle, mic live) simply aren't drawn — but nothing is abstracted.
+  function jStatus(withWords) {
+    const out = [];
+    const ico = (g, c) => `<span class="ico ${c}">${g}</span>`;
+
+    if (on("micMuted")) out.push(ico(G.micOff, "muted"));
+    if (on("sinkMuted")) out.push(ico(G.sndOff, "muted"));
+    else if (on("btAudio")) out.push(ico(G.sndBt, "ok"));
+
+    if (on("btAudio") && !on("btOff"))
+      out.push(ico(G.btConn, "ok"));
+    else if (on("btOff")) out.push(ico(G.btOff, "off"));
+
+    if (on("vpnOn")) {
+      out.push(withWords
+        ? `<span style="display:inline-flex;align-items:center;gap:6px">${ico(G.vpn, "vpn")}` +
+          `<span style="font-size:12px" class="vpn">tailscale</span></span>`
+        : ico(G.vpn, "vpn"));
+    }
+
+    if (on("wifiOff")) out.push(ico(G.wifiOff, "off"));
+    else out.push(withWords
+      ? `<span style="display:inline-flex;align-items:center;gap:6px">${ico(G.wifiOn, "ok")}` +
+        `<span style="font-size:12px">Ziggo8410435</span></span>`
+      : ico(G.wifiOn, "ok"));
+
+    const cpu = +$("cpu").value, mem = +$("mem").value;
+    if (cpu >= 80) out.push(`${ico(G.cpu, "crit")}<span class="val crit" style="margin-left:4px">${cpu}%</span>`);
+    if (mem >= 85) out.push(`${ico(G.mem, "crit")}<span class="val crit" style="margin-left:4px">${mem}%</span>`);
+
+    out.push(battery());
+    return out.join("");
+  }
+
+  function paintJ() {
+    for (const [p, words] of [["J1", false], ["J2", true], ["J3", true]]) {
+      const s = $(`${p}_status`);
+      if (s) s.innerHTML = jStatus(words);
+      const k = $(`${p}_kube`);
+      if (k) {
+        k.textContent = on("prod") ? "rs-prod" : "rs-stag";
+        k.className = "kube" + (on("prod") ? " prod" : "");
+      }
+    }
+  }
+
+  $("showShift").addEventListener("change", e =>
+    document.body.classList.toggle("shift", e.target.checked));
+  document.body.classList.toggle("shift", $("showShift").checked);
+
+  function all() {
+    $("cpuOut").textContent = $("cpu").value + "%";
+    $("memOut").textContent = $("mem").value + "%";
+    $("delayOut").textContent = $("delay").value + "ms";
+    paint("A"); paintB(); paintC(); paintD();
+    paintE1(); paintE2(); paintE3();
+    paintF1(); paintF2(); paintF3();
+    paintG1(); paintG2(); paintG3();
+    paintH();
+    paintI1(); paintI2(); paintI3();
+    paintJ();
+  }
+
+  document.querySelectorAll("input").forEach(i => i.addEventListener("input", all));
+  all();
+})();
+</script>
+</div>
