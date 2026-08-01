@@ -169,6 +169,16 @@ PanelWindow {
             // Only the keys that can't be part of a device name stay live:
             // moving the cursor, choosing, and getting out.
             if (root.searching) {
+                // Ctrl-j/k move without leaving the home row. Checked before
+                // the switch because their event.text is a control character
+                // that must never reach the query.
+                if (event.modifiers & Qt.ControlModifier) {
+                    if (event.key === Qt.Key_J) root.move(1);
+                    else if (event.key === Qt.Key_K) root.move(-1);
+                    else return;
+                    event.accepted = true;
+                    return;
+                }
                 switch (event.key) {
                 case Qt.Key_Escape:
                     // First Esc abandons the search, a second closes the menu —
