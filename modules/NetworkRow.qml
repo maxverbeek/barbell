@@ -69,7 +69,7 @@ Item {
             Text {
                 visible: !root.asking
                 text: root.row.kind === "vpn" ? Svc.Network.tunnelLabel(root.row.tunnel)
-                    : root.row.kind === "more" ? `${root.row.count} more exits`
+                    : root.row.kind === "more" ? `${root.row.count} more networks`
                     : root.row.kind === "toggle"
                         ? (Svc.Network.wifiEnabled ? "Wi-Fi on" : "Wi-Fi off")
                     : root.net.name

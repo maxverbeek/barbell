@@ -24,27 +24,31 @@ Menu {
     function cancelPassword() { pending = null; password = ""; }
 
     // Active tunnels first so turning one off is always at the top, then the
-    // rest to pick from. Eight WireGuard exits is too many to scroll past on
-    // the way to wifi, so only the active ones show until you search or the
-    // section is expanded.
-    property bool showAllTunnels: false
+    // rest to pick from. All of them show — there are only a handful and
+    // picking an exit is the reason the menu gets opened.
+    //
+    // Access points are the long list instead: everything in range is dozens
+    // of neighbours' routers, so only the top few (connected and saved sort
+    // first) show until you search or expand.
+    property bool showAllNetworks: false
+    readonly property int networkLimit: 5
 
     allRows: {
         const out = [];
         const ts = Svc.Network.tunnels;
-        const active = ts.filter(t => t.active);
-        const rest = ts.filter(t => !t.active);
-        const shown = (showAllTunnels || query !== "") ? active.concat(rest) : active;
-        for (const t of shown)
+        for (const t of ts.filter(t => t.active).concat(ts.filter(t => !t.active)))
             out.push({ kind: "vpn", tunnel: t, section: "VPN" });
-        // A way in when nothing is connected and nothing is expanded.
-        if (!showAllTunnels && query === "" && rest.length > 0)
-            out.push({ kind: "more", count: rest.length, section: "VPN" });
 
         out.push({ kind: "toggle", section: "Wi-Fi" });
-        if (Svc.Network.wifiEnabled)
-            for (const n of Svc.Network.networks)
+        if (Svc.Network.wifiEnabled) {
+            const ns = Svc.Network.networks;
+            const all = showAllNetworks || query !== "";
+            for (const n of (all ? ns : ns.slice(0, networkLimit)))
                 out.push({ kind: "network", net: n, section: "Wi-Fi" });
+            // A way in to the rest of what's in range.
+            if (!all && ns.length > networkLimit)
+                out.push({ kind: "more", count: ns.length - networkLimit, section: "Wi-Fi" });
+        }
         return out;
     }
 
@@ -64,7 +68,7 @@ Menu {
 
     activateRow: row => {
         if (row.kind === "toggle") { Svc.Network.toggleWifi(); return; }
-        if (row.kind === "more") { root.showAllTunnels = true; return; }
+        if (row.kind === "more") { root.showAllNetworks = true; return; }
         if (row.kind === "vpn") { Svc.Network.toggleTunnel(row.tunnel); return; }
         const n = row.net;
         if (n.connected) { n.disconnect(); return; }
