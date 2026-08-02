@@ -2,7 +2,8 @@ import QtQuick
 import ".."
 import "../services" as Svc
 
-// One rate-limit bucket: name, fill bar, the figures. The notch on the bar is
+// One rate-limit bucket — name, fill bar, the figures — or one Claude Code
+// session window, which is just its title. The notch on a bucket's bar is
 // where the window's clock stands — fill left of the notch means under pace,
 // past it means on course to run out. The gap between them is the whole
 // story, which is more than the two numbers say on their own.
@@ -17,11 +18,12 @@ Item {
     signal clicked()
 
     readonly property bool empty: row.kind === "empty"
-    readonly property var bucket: empty ? null : row.bucket
+    readonly property bool isWindow: row.kind === "window"
+    readonly property var bucket: row.kind === "bucket" ? row.bucket : null
 
     // Same lines the bar widget draws with: on pace to run out is warn,
     // running out well before reset (or nearly full) is bad.
-    readonly property color tone: empty ? Theme.fgFaint
+    readonly property color tone: !bucket ? Theme.fgFaint
         : bucket.used >= 90 || bucket.projected >= 150 ? Theme.bad
         : bucket.used >= 70 || bucket.projected >= 100 ? Theme.warn
         : Theme.accent
@@ -41,22 +43,40 @@ Item {
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
         height: 28
         radius: 6
-        color: root.active && !root.empty ? Theme.islandActive : "transparent"
+        color: root.active ? Theme.islandActive : "transparent"
+
+        Text {
+            id: glyph
+            visible: root.isWindow
+            // Busy sessions get an accent spinner — the glyph animates on its
+            // own as the title updates. Idle ones sit faint, waiting on you.
+            text: root.isWindow ? root.row.glyph : ""
+            color: root.row.busy ? Theme.accent : Theme.fgFaint
+            font { family: Theme.font; pixelSize: 12 }
+            width: 16
+            anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
+        }
 
         Text {
             id: name
             text: root.empty ? "no data"
+                : root.isWindow ? root.row.title
                 : Svc.ClaudeUsage.bucketName(root.bucket.key)
             color: root.empty ? Theme.fgFaint : Theme.fg
             font { family: Theme.font; pixelSize: 12 }
-            width: 48
+            // A session row is all title, a bucket row leaves room for the bar.
+            width: root.isWindow ? parent.width - 28 : 48
             elide: Text.ElideRight
-            anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
+            anchors {
+                left: root.isWindow ? glyph.right : parent.left
+                leftMargin: root.isWindow ? 0 : 6
+                verticalCenter: parent.verticalCenter
+            }
         }
 
         Rectangle {
             id: track
-            visible: !root.empty
+            visible: root.bucket !== null
             anchors { left: name.right; right: figures.left; rightMargin: 10
                       verticalCenter: parent.verticalCenter }
             height: 4
@@ -85,7 +105,7 @@ Item {
 
         Text {
             id: figures
-            text: root.empty ? ""
+            text: !root.bucket ? ""
                 : `${Math.round(root.bucket.used)}%  ·  ${Svc.ClaudeUsage.untilReset(root.bucket.resetsAt)}`
             color: root.tone === Theme.accent ? Theme.fgDim : root.tone
             font { family: Theme.font; pixelSize: 11 }
