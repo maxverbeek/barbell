@@ -56,7 +56,6 @@ RowLayout {
                             // taller and heavier than its square neighbours.
                             fillMode: Image.PreserveAspectFit
                             sourceSize: Qt.size(15, 15)
-                            opacity: modelData.is_focused ? 1.0 : 0.5
                         }
 
                         // Absolute so the focus underline can't push the icon up.
@@ -79,6 +78,18 @@ RowLayout {
                 anchors.fill: parent
                 hoverEnabled: true
                 onClicked: Niri.focusWorkspace(modelData.idx)
+                // Scroll pans the window view sideways. A trackpad sends many
+                // small deltas per gesture, so accumulate and step once per
+                // notch rather than firing on every event.
+                property real acc: 0
+                onWheel: wheel => {
+                    acc += wheel.angleDelta.y || wheel.angleDelta.x;
+                    while (Math.abs(acc) >= 120) {
+                        // Wheel-up is positive and pans left, as in a document.
+                        Niri.focusColumn(acc > 0 ? -1 : 1);
+                        acc -= acc > 0 ? 120 : -120;
+                    }
+                }
             }
         }
     }

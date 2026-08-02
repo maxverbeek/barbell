@@ -48,6 +48,14 @@ Singleton {
         Quickshell.execDetached(["niri", "msg", "action", "focus-workspace", String(id)]);
     }
 
+    // Pan the scrolling layout sideways. niri has no "scroll the view" action
+    // that leaves focus alone, so panning is focus-column-left/right — which
+    // is what you want anyway: the view follows focus.
+    function focusColumn(delta) {
+        Quickshell.execDetached(["niri", "msg", "action",
+            delta < 0 ? "focus-column-left" : "focus-column-right"]);
+    }
+
     Process {
         id: events
         running: true
