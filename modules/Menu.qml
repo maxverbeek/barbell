@@ -160,6 +160,10 @@ PanelWindow {
         if (row) nudgeRow(row, delta);
     }
 
+    function nudgeStep(event) {
+        return (event.modifiers & Qt.ShiftModifier) ? 0.01 : 0.05;
+    }
+
     Item {
         id: keys
         anchors.fill: parent
@@ -231,8 +235,9 @@ PanelWindow {
                 root.selected = (event.modifiers & Qt.ShiftModifier)
                     ? root.rows.length - 1 : 0;
                 break;
-            case Qt.Key_H: case Qt.Key_Left:           root.nudge(-0.05); break;
-            case Qt.Key_L: case Qt.Key_Right:          root.nudge(0.05); break;
+            // Shift for fine adjustment: one point instead of five.
+            case Qt.Key_H: case Qt.Key_Left:           root.nudge(-root.nudgeStep(event)); break;
+            case Qt.Key_L: case Qt.Key_Right:          root.nudge(root.nudgeStep(event)); break;
             case Qt.Key_BracketLeft:                   root.jumpSection(-1); break;
             case Qt.Key_BracketRight:                  root.jumpSection(1); break;
             case Qt.Key_Return: case Qt.Key_Enter:
