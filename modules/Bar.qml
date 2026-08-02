@@ -42,6 +42,8 @@ PanelWindow {
 
             KubeContext { Layout.alignment: Qt.AlignVCenter }
 
+            Tray { Layout.alignment: Qt.AlignVCenter }
+
             // Network, bluetooth and audio as one button into the menus.
             Island { Layout.alignment: Qt.AlignVCenter }
 
