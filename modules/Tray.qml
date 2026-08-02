@@ -8,19 +8,15 @@ import ".."
 // StatusNotifier tray, for the apps that only talk through it — Slack's
 // unread badge, and whatever else insists on living there.
 //
-// The bar already has first-class widgets for network, bluetooth and audio,
-// so their applets' tray icons would say the same thing twice; anything on
-// the blocklist is dropped rather than drawn.
+// Every item shows, unfiltered: the applets that would duplicate the bar's
+// own widgets (nm-applet, blueman) aren't autostarted anymore, and if one is
+// running anyway it's because it was started on purpose.
 RowLayout {
     id: root
     spacing: 8
 
-    // Matched as a substring of the item's StatusNotifier id, lowercased.
-    readonly property var hidden: ["nm-applet", "blueman"]
-
     Repeater {
-        model: SystemTray.items.values.filter(i =>
-            !root.hidden.some(h => (i.id ?? "").toLowerCase().includes(h)))
+        model: SystemTray.items
 
         Item {
             id: item
