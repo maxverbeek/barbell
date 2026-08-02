@@ -30,9 +30,11 @@ PanelWindow {
     exclusiveZone: 0
 
     visible: showing
-    anchors { bottom: Theme.bottom; top: !Theme.bottom; left: true; right: true }
-    margins { bottom: Theme.bottom ? Theme.barHeight + 24 : 0
-              top: Theme.bottom ? 0 : Theme.barHeight + 24 }
+    // Opposite edge from the bar: feedback shouldn't cover the thing whose
+    // icon you just used.
+    anchors { bottom: !Theme.bottom; top: Theme.bottom; left: true; right: true }
+    margins { bottom: Theme.bottom ? 0 : 24
+              top: Theme.bottom ? 24 : 0 }
     implicitHeight: 44
     color: "transparent"
 
