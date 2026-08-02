@@ -69,7 +69,7 @@ PanelWindow {
                 border {
                     width: 1
                     // Critical earns the only coloured border on screen.
-                    color: card.critical ? Theme.bad : Theme.sumiInk3
+                    color: card.critical ? Theme.bad : Theme.border
                 }
 
                 // Slide in from the right rather than appearing — motion says

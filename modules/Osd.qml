@@ -59,7 +59,7 @@ PanelWindow {
         height: 36
         radius: 18
         color: Theme.menuBg
-        border { width: 1; color: Theme.sumiInk3 }
+        border { width: 1; color: Theme.border }
         opacity: root.showing ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 140 } }
 
@@ -83,7 +83,7 @@ PanelWindow {
                 width: 108
                 height: 4
                 radius: 2
-                color: Theme.sumiInk4
+                color: Theme.track
                 anchors.verticalCenter: parent.verticalCenter
 
                 Rectangle {

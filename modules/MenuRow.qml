@@ -102,7 +102,7 @@ Item {
                     anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
                     height: 4
                     radius: 2
-                    color: Theme.sumiInk4
+                    color: Theme.track
 
                     Rectangle {
                         width: track.width * slider.fraction

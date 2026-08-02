@@ -21,14 +21,14 @@ Item {
     // The normal fill is lifted above islandActive: the fill must be BRIGHTER
     // than the rest or the pill reads inverted — a brain sees bright as full,
     // and waveBlue2 against sumiInk4 had it exactly backwards.
-    readonly property color level: charging ? Theme.autumnGreen
-        : percent <= 10 ? Theme.autumnRed
-        : percent <= 25 ? Theme.boatYellow2
+    readonly property color level: charging ? Theme.goodDim
+        : percent <= 10 ? Theme.badDim
+        : percent <= 25 ? Theme.warnDim
         : Qt.lighter(Theme.islandActive, 1.45)
 
     // The remainder, kept well below the fill so the divide is a real step in
     // luminance rather than a hue hint — that step is the analog readout.
-    readonly property color rest: Theme.sumiInk3
+    readonly property color rest: Theme.border
 
     // Low charge is the digits' problem too: the coloured fill is a sliver
     // hiding behind them exactly when it matters, so the number itself takes
@@ -126,7 +126,7 @@ Item {
                 anchors.verticalCenterOffset: modelData[1]
                 text: "󱐋"
                 font { family: Theme.iconFont; pixelSize: 15 }
-                color: Theme.bg0
+                color: Theme.onFill
             }
         }
 

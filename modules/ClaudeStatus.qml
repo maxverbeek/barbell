@@ -95,7 +95,7 @@ Item {
             anchors.fill: parent
             radius: 8
             color: Theme.menuBg
-            border { width: 1; color: Theme.sumiInk3 }
+            border { width: 1; color: Theme.border }
 
             ColumnLayout {
                 id: tip

@@ -276,7 +276,7 @@ PanelWindow {
             }
             color: Theme.menuBg
             radius: 10
-            border { width: 1; color: Theme.sumiInk3 }
+            border { width: 1; color: Theme.border }
 
             // Swallow clicks so they don't reach the dismiss area behind.
             MouseArea { anchors.fill: parent }

@@ -61,7 +61,7 @@ Item {
                       verticalCenter: parent.verticalCenter }
             height: 4
             radius: 2
-            color: Theme.sumiInk4
+            color: Theme.track
 
             Rectangle {
                 width: parent.width * Math.min(1, (root.bucket?.used ?? 0) / 100)
