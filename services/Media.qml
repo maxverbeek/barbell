@@ -62,5 +62,11 @@ Singleton {
     function toggle() { if (player?.canTogglePlaying) player.togglePlaying(); }
     function next() { if (player?.canGoNext) player.next(); }
     function previous() { if (player?.canGoPrevious) player.previous(); }
-    function raise() { if (player?.canRaise) player.raise(); }
+    // Focus via the compositor when the window is findable — MPRIS Raise asks
+    // the app to raise itself, which Spotify advertises but botches on Wayland.
+    function raise() {
+        const win = windowFor(player);
+        if (win) Niri.focusWindow(win.id);
+        else if (player?.canRaise) player.raise();
+    }
 }
