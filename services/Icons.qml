@@ -14,7 +14,10 @@ Singleton {
     // rather than anything in $HOME. Claude's are the spinner frames below.
     readonly property var customIcons: ["kubernetes", "neovim", "zen-browser", "claude-code", "claude-spinner-0", "claude-spinner-1", "claude-spinner-2", "claude-spinner-3", "claude-spinner-4", "claude-spinner-5"]
 
-    // Terminal apps all share one app_id, so the title is the only clue.
+    // Terminal apps all share one app_id, so the title is the only clue — but
+    // only inside a terminal. A browser tab named "…/nvim/init.lua" is not nvim.
+    readonly property var terminalAppIds: ["foot"]
+
     readonly property var titleRules: [
         { pattern: /nvim|neovim/i, icon: "neovim" },
         { pattern: /spotify/i, icon: "spotify-client" }
@@ -32,7 +35,7 @@ Singleton {
     // report in keeps the count honest: there's nothing to increment, nothing
     // to decrement on destruction, and no way for the two to drift apart.
     readonly property bool anyThinking:
-        Object.values(Niri.windows).some(w => thinkingPattern.test(w.title ?? ""))
+        Object.values(Niri.windows).some(w => isTerminal(w) && thinkingPattern.test(w.title ?? ""))
     readonly property int spinnerFrame: spinner.running ? spinner.frame : 0
 
     Timer {
@@ -50,13 +53,17 @@ Singleton {
 
     // Whether this window is a Claude Code session at all — working or
     // waiting. The title markers are the only signal there is.
+    function isTerminal(window) {
+        return terminalAppIds.includes(window?.app_id ?? "");
+    }
+
     function isClaude(window) {
-        const title = window?.title ?? "";
+        const title = isTerminal(window) ? window.title ?? "" : "";
         return thinkingPattern.test(title) || title.startsWith("✳");
     }
 
     function claudeIcon(window) {
-        const title = window?.title ?? "";
+        const title = isTerminal(window) ? window.title ?? "" : "";
         if (thinkingPattern.test(title))
             return `claude-spinner-${spinnerFrame}`;
         // No braille means it's waiting on you rather than working.
@@ -78,10 +85,12 @@ Singleton {
     }
 
     function forWindow(window) {
-        for (const rule of titleRules) {
-            const hit = rule.pattern.test(window.title ?? "") && resolve(rule.icon);
-            if (hit)
-                return hit;
+        if (isTerminal(window)) {
+            for (const rule of titleRules) {
+                const hit = rule.pattern.test(window.title ?? "") && resolve(rule.icon);
+                if (hit)
+                    return hit;
+            }
         }
         return resolve(claudeIcon(window)) || icon(window.app_id);
     }
