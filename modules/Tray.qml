@@ -19,6 +19,10 @@ RowLayout {
     // stretch like a spacer and shove everything after it off-centre.
     Layout.fillWidth: false
 
+    // A zero-width tray still earns the bar's spacing on both sides — a
+    // double gap between kube and the island — unless it's hidden outright.
+    visible: SystemTray.items.values.length > 0
+
     Repeater {
         model: SystemTray.items
 
