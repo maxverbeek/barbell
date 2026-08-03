@@ -19,14 +19,14 @@ Menu {
 
     // Claude Code stamps its terminal title with a spinner glyph — braille
     // while working, ✳ and friends while idle. That prefix is how a session's
-    // window is told apart from every other terminal, and it's parsed here,
-    // once: rows carry glyph/title/busy so ClaudeRow renders fields without
-    // knowing the format. If another widget ever wants the session list, this
-    // function moves to a service as-is.
+    // window is told apart from every other terminal, and it's stripped here so
+    // the row shows a name rather than a stuttering character; the icon carries
+    // working-vs-waiting instead. If another widget ever wants the session list,
+    // this function moves to a service as-is.
     function session(w) {
         const m = /^([⠀-⣿✳✶✻✽·✢]) (.*)/.exec(w.title ?? "");
         return m && { kind: "window", win: w, section: "Sessions",
-                      glyph: m[1], title: m[2], busy: m[1] >= "⠀" && m[1] <= "⣿" };
+                      title: m[2], busy: m[1] >= "⠀" && m[1] <= "⣿" };
     }
 
     allRows: {

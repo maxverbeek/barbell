@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell.Widgets
 import ".."
 import "../services" as Svc
 
@@ -45,15 +46,16 @@ Item {
         radius: 6
         color: root.active ? Theme.islandActive : "transparent"
 
-        Text {
+        // The same mark the bar draws: the spinner frames while the session is
+        // working, the plain logo while it waits on you. Two states one glyph
+        // can't tell apart — ✳ animates too, so a still logo is the only way
+        // "idle" reads as idle at a glance.
+        IconImage {
             id: glyph
             visible: root.isWindow
-            // Busy sessions get an accent spinner — the glyph animates on its
-            // own as the title updates. Idle ones sit faint, waiting on you.
-            text: root.isWindow ? root.row.glyph : ""
-            color: root.row.busy ? Theme.accent : Theme.fgFaint
-            font { family: Theme.font; pixelSize: 12 }
-            width: 16
+            source: root.isWindow ? Svc.Icons.resolve(Svc.Icons.claudeIcon(root.row.win)) : ""
+            implicitSize: 14
+            opacity: root.row.busy ? 1 : 0.55
             anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
         }
 
@@ -69,7 +71,7 @@ Item {
             elide: Text.ElideRight
             anchors {
                 left: root.isWindow ? glyph.right : parent.left
-                leftMargin: root.isWindow ? 0 : 6
+                leftMargin: 6
                 verticalCenter: parent.verticalCenter
             }
         }
