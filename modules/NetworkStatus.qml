@@ -19,7 +19,7 @@ Row {
 
     // Networks I'm on so routinely that naming them says nothing. Anything
     // else is worth the bar space — that's the whole point of showing it.
-    readonly property var familiar: ["Ziggo8410435"]
+    readonly property var familiar: ["Ziggo8410435", "Researchable"]
 
     Text {
         visible: Network.vpnActive
