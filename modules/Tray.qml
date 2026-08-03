@@ -15,6 +15,10 @@ RowLayout {
     id: root
     spacing: 8
 
+    // A nested layout defaults to fillWidth: true, which makes an empty tray
+    // stretch like a spacer and shove everything after it off-centre.
+    Layout.fillWidth: false
+
     Repeater {
         model: SystemTray.items
 
