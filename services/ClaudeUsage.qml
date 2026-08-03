@@ -90,11 +90,20 @@ Singleton {
 
         // The token rides in via curl's config-from-stdin rather than argv,
         // where any process could read it out of /proc/*/cmdline.
+        //
+        // The response is also teed to claude-usage-limits.json so the Claude
+        // Code statusline can read the scoped (Fable) weekly without polling the
+        // endpoint itself. Two independent pollers on this endpoint is how you
+        // earn a 429 — see the throttle note on refresh(). Only a real limits
+        // array is written, so an error body never replaces good cached data.
         command: ["bash", "-c",
             `token=$(jq -r '.claudeAiOauth.accessToken // empty' ~/.claude/.credentials.json 2>/dev/null); ` +
             `[ -n "$token" ] || exit 1; ` +
-            `printf 'header = "Authorization: Bearer %s"\\n' "$token" | ` +
-            `curl -sf -m 10 -K - -H "anthropic-beta: oauth-2025-04-20" https://api.anthropic.com/api/oauth/usage`]
+            `body=$(printf 'header = "Authorization: Bearer %s"\\n' "$token" | ` +
+            `curl -sf -m 10 -K - -H "anthropic-beta: oauth-2025-04-20" https://api.anthropic.com/api/oauth/usage); ` +
+            `printf '%s' "$body" | jq -e '.limits | arrays' >/dev/null 2>&1 && ` +
+            `printf '%s' "$body" > "\${XDG_RUNTIME_DIR:-/tmp}/claude-usage-limits.json"; ` +
+            `printf '%s' "$body"`]
 
         stdout: StdioCollector {
             onStreamFinished: root.ingestApi(text)
