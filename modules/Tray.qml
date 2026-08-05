@@ -46,19 +46,26 @@ RowLayout {
                 return m !== null && !Quickshell.hasThemeIcon(m[1]);
             }
 
+            // Spotify's tray icon decodes to a 0×0 nothing — a successful load
+            // of a blank image, indistinguishable via any IconImage property
+            // from an icon that renders fine. So it's a named exception: draw
+            // its own glyph instead of the (missing) icon.
+            readonly property bool spotify: modelData.id === "spotify-client"
+
             IconImage {
                 anchors.fill: parent
-                visible: !item.broken
+                visible: !item.broken && !item.spotify
                 source: item.broken ? "" : item.modelData.icon
             }
 
-            // A generic glyph at least looks meant.
+            // A generic glyph for a theme-name miss; Spotify's own logo for the
+            // one app that hands us a blank icon.
             Text {
                 anchors.centerIn: parent
-                visible: item.broken
-                text: "󰀻"
-                font { family: Theme.iconFont; pixelSize: 14 }
-                color: Theme.fgDim
+                visible: item.broken || item.spotify
+                text: item.spotify ? "󰓇" : "󰀻"
+                font { family: Theme.iconFont; pixelSize: item.spotify ? 15 : 14 }
+                color: item.spotify ? Theme.good : Theme.fgDim
             }
 
             MouseArea {

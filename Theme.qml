@@ -77,7 +77,7 @@ Singleton {
     // --- accents ---------------------------------------------------------
     // Kanagawa Lotus in light, Kanagawa Wave in dark. These read well on
     // Latte surfaces, so only the surfaces changed.
-    readonly property color crystalBlue: isLight ? "#4d699b" : "#7e9cd8"
+    readonly property color crystalBlue: isLight ? "#1e66f5" : "#7e9cd8"
     readonly property color springGreen: isLight ? "#6f894e" : "#98bb6c"
     readonly property color autumnGreen: isLight ? "#6e915f" : "#76946a"
     // Lotus's yellows (#836f4a / #77713f) are desaturated olive: on Latte
@@ -93,8 +93,14 @@ Singleton {
     readonly property color bg0: base
     readonly property color barBg: Qt.rgba(base.r, base.g, base.b, 0.92)
     readonly property color menuBg: raised
-    readonly property color island: Qt.rgba(deep.r, deep.g, deep.b, isLight ? 0.75 : 0.55)
-    readonly property color islandHover: deep
+    // Light `deep` (#dce0e8) sits one hair below the bar, so the island used to
+    // vanish. Light surfaces recede upward, so a control sinks: rest is a soft
+    // step down (`line` softened), hover a firmer one — same lift as dark, just
+    // the opposite direction.
+    readonly property color island: isLight
+        ? Qt.rgba(line.r, line.g, line.b, 0.55)
+        : Qt.rgba(deep.r, deep.g, deep.b, 0.55)
+    readonly property color islandHover: isLight ? line : deep
     readonly property color islandActive: selected
 
     // Borders and dividers. `line` in both variants: a border is the same job
