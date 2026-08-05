@@ -80,8 +80,12 @@ Singleton {
     readonly property color crystalBlue: isLight ? "#4d699b" : "#7e9cd8"
     readonly property color springGreen: isLight ? "#6f894e" : "#98bb6c"
     readonly property color autumnGreen: isLight ? "#6e915f" : "#76946a"
-    readonly property color carpYellow: isLight ? "#836f4a" : "#e6c384"
-    readonly property color boatYellow2: isLight ? "#77713f" : "#c0a36e"
+    // Lotus's yellows (#836f4a / #77713f) are desaturated olive: on Latte
+    // surfaces they read as grey-brown, i.e. as no warning at all. Latte's own
+    // peach carries the "orange" signal, and its darker sibling stays out of
+    // the light digits' luminance range.
+    readonly property color carpYellow: isLight ? "#fe640b" : "#e6c384"
+    readonly property color boatYellow2: isLight ? "#c4600a" : "#c0a36e"
     readonly property color autumnRed: isLight ? "#c84053" : "#c34043"
     readonly property color peachRed: isLight ? "#d7474b" : "#ff5d62"
 
