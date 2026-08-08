@@ -24,6 +24,16 @@
         };
       });
 
+      # `nix flake check` only *evaluates* packages/devShells, so a lock bump
+      # that breaks the real build would still pass. These force a build.
+      # The package is a shell wrapper that merely references quickshell in a
+      # string, so quickshell is pulled in explicitly here.
+      checks = forAllSystems (pkgs: {
+        package = self.packages.${pkgs.system}.default;
+        devShell = self.devShells.${pkgs.system}.default;
+        quickshell = pkgs.quickshell;
+      });
+
       packages = forAllSystems (pkgs: {
         # `barbell` runs the bar; `barbell ipc ...` talks to it. The ipc
         # subcommand exists because quickshell addresses instances by config
