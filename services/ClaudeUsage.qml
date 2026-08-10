@@ -3,57 +3,29 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Claude Code's rate-limit state, which exists nowhere on disk on its own — no
-// API to ask, and the session transcripts don't record it. The only place it
-// surfaces is the JSON blob handed to the statusline command on every render,
-// so ~/.claude/hooks/usage-dump.sh tees that blob here and this watches it.
+// Claude Code's rate-limit state, from the OAuth usage endpoint. It reports
+// every bucket — the 5h session window, the weekly all-models window, and the
+// scoped (Fable) weekly that never appears anywhere else — so one poll is the
+// whole picture, live session or not. The statusline-dump file this used to
+// watch is gone: it was only as fresh as the last render, which made a closed
+// laptop indistinguishable from a live quota.
 //
-// Consequence worth remembering: this is only as fresh as the last statusline
-// render. With no Claude running the file just sits there, so `stale` is part
-// of the contract rather than an error case — a quota number from yesterday
-// looks exactly like a current one, and that's the way to read it wrong.
+// Freshness is still part of the contract: a poll that stops answering (no
+// network, expired token) leaves numbers that look current. `stale` flips
+// after three missed polls; readers grey out rather than lie.
 Singleton {
     id: root
 
-    readonly property string path: `${Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"}/claude-usage.json`
+    // All buckets the endpoint reports, oldest shape first: session (5h),
+    // weekly_all (7d), then scoped ones keyed by their model display name.
+    property var buckets: []
+    property double apiSeen: 0
 
-    property var data: ({})
+    readonly property bool known: apiSeen > 0
+    readonly property bool stale: !known || (now > 0 && now - apiSeen > 900000)
 
-    readonly property real fiveHour: pct("five_hour")
-    readonly property real sevenDay: pct("seven_day")
-    readonly property double fiveHourReset: reset("five_hour")
-    readonly property double sevenDayReset: reset("seven_day")
-
-    readonly property string model: data?.model?.display_name ?? ""
-    readonly property real cost: data?.cost?.total_cost_usd ?? 0
-
-    // Whether we have anything at all. An empty file and a missing one are the
-    // same thing to a reader.
-    readonly property bool known: data?.rate_limits !== undefined
-
-    function pct(window) {
-        return data?.rate_limits?.[window]?.used_percentage ?? 0;
-    }
-
-    function reset(window) {
-        return (data?.rate_limits?.[window]?.resets_at ?? 0) * 1000;
-    }
-
-    // Whatever buckets the payload actually reports, rather than the two we know
-    // about, plus the scoped ones only the API tells us about. Scoped buckets
-    // are dropped once the poll stops answering — a Fable number from an hour
-    // ago shown next to live 5h/7d numbers would read as equally current.
-    readonly property var windows: {
-        const rl = data?.rate_limits ?? {};
-        const fromFile = Object.keys(rl).map(k => ({
-            key: k,
-            used: rl[k]?.used_percentage ?? 0,
-            resetsAt: (rl[k]?.resets_at ?? 0) * 1000
-        }));
-        const apiFresh = now > 0 && apiSeen > 0 && now - apiSeen < 900000;
-        const all = apiFresh ? fromFile.concat(scoped) : fromFile;
-        return all.map(w => Object.assign({}, w, { projected: projectedAt(w) }));
-    }
+    readonly property var windows:
+        buckets.map(w => Object.assign({}, w, { projected: projectedAt(w) }))
 
     // What linear burn says the bucket hits by reset. 40% used with the week
     // 80% gone projects to 50 — fine; 40% used two days in projects to 140 —
@@ -62,19 +34,12 @@ Singleton {
     // the end of a window it converges to the plain used%, so it works as the
     // single risk measure.
     function projectedAt(w) {
-        const len = w.key === "five_hour" ? 5 * 3600000 : 7 * 86400000;
+        const len = w.group === "session" ? 5 * 3600000 : 7 * 86400000;
         const elapsed = 1 - Math.max(0, w.resetsAt - now) / len;
         // A freshly reset window divides by nearly zero and screams over
         // nothing; below 5% elapsed the pace isn't information yet.
         return elapsed >= 0.05 ? w.used / elapsed : w.used;
     }
-
-    // Per-model weekly limits (Fable, today) never appear in the statusline
-    // payload — the OAuth usage endpoint is the only place that reports them.
-    // The unscoped entries it also returns are the same 5h/7d numbers the file
-    // already pushes on every render, so only the scoped ones are kept.
-    property var scoped: []
-    property double apiSeen: 0
 
     Timer {
         // Weekly buckets move slowly; five minutes is generous.
@@ -92,10 +57,10 @@ Singleton {
         // where any process could read it out of /proc/*/cmdline.
         //
         // The response is also teed to claude-usage-limits.json so the Claude
-        // Code statusline can read the scoped (Fable) weekly without polling the
-        // endpoint itself. Two independent pollers on this endpoint is how you
-        // earn a 429 — see the throttle note on refresh(). Only a real limits
-        // array is written, so an error body never replaces good cached data.
+        // Code statusline can read the buckets without polling the endpoint
+        // itself. Two independent pollers on this endpoint is how you earn a
+        // 429 — see the throttle note on refresh(). Only a real limits array
+        // is written, so an error body never replaces good cached data.
         command: ["bash", "-c",
             `token=$(jq -r '.claudeAiOauth.accessToken // empty' ~/.claude/.credentials.json 2>/dev/null); ` +
             `[ -n "$token" ] || exit 1; ` +
@@ -114,18 +79,17 @@ Singleton {
         try {
             const limits = JSON.parse(raw)?.limits;
             // An error response is valid JSON too — a 429 body parses fine and
-            // has no limits array. Treating it as data replaced the scoped
-            // buckets with nothing and stamped the nothing as fresh; only a
-            // real limits array counts, anything else keeps what we had and
-            // lets the freshness window retire it honestly.
+            // has no limits array. Treating it as data would replace the
+            // buckets with nothing and stamp the nothing as fresh; only a real
+            // limits array counts, anything else keeps what we had and lets
+            // the freshness window retire it honestly.
             if (!Array.isArray(limits)) return;
-            scoped = limits
-                .filter(l => l.scope)
-                .map(l => ({
-                    key: l.scope.model?.display_name ?? l.kind,
-                    used: l.percent ?? 0,
-                    resetsAt: Date.parse(l.resets_at) || 0
-                }));
+            buckets = limits.map(l => ({
+                key: l.scope ? (l.scope.model?.display_name ?? l.kind) : l.kind,
+                group: l.group ?? "weekly",
+                used: l.percent ?? 0,
+                resetsAt: Date.parse(l.resets_at) || 0
+            }));
             apiSeen = Date.now();
         } catch (e) {
             // Failed fetch or changed shape: keep what we had.
@@ -150,15 +114,9 @@ Singleton {
         onTriggered: root.now = Date.now()
     }
 
-    // No statusline render in a while means nothing is driving the file. Ten
-    // minutes is longer than any gap between renders in a live session and
-    // short enough that a closed laptop shows as stale rather than as truth.
-    readonly property bool stale: !known || (now > 0 && lastSeen > 0 && now - lastSeen > 600000)
-    property double lastSeen: 0
-
     // The peek card and the widget tooltip both name buckets; one map.
     function bucketName(key) {
-        return ({ five_hour: "5h", seven_day: "7d" })[key] ?? key;
+        return ({ session: "5h", weekly_all: "7d" })[key] ?? key;
     }
 
     // The claude menu calls this on open, so a peek shows now rather than the
@@ -183,36 +141,5 @@ Singleton {
         // not an answer.
         if (h >= 48) return `${Math.round(h / 24)}d`;
         return mins % 60 === 0 ? `${h}h` : `${h}h${mins % 60}m`;
-    }
-
-    FileView {
-        id: file
-        path: root.path
-        watchChanges: true
-        // Missing file is the normal state before the first render, not a fault.
-        printErrors: false
-        // Without this the first read waits for a write, so a bar started
-        // between renders shows nothing despite a perfectly good file on disk.
-        blockLoading: true
-
-        onFileChanged: reload()
-        // Qualified: an unqualified text() would resolve against the singleton.
-        onLoaded: root.ingest(file.text())
-        onLoadFailed: root.data = ({})
-    }
-
-    function ingest(raw) {
-        try {
-            const parsed = JSON.parse(raw);
-            data = parsed;
-            // The file's own mtime would be better, but FileView doesn't expose
-            // it; a write is what woke us, so now is close enough.
-            lastSeen = Date.now();
-            if (now === 0) now = lastSeen;
-        } catch (e) {
-            // A half-written file would throw, but the hook renames into place
-            // atomically, so this really means the payload shape changed.
-            data = ({});
-        }
     }
 }

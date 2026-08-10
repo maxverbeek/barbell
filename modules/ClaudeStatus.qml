@@ -18,8 +18,8 @@ import "../services" as Svc
 //   used >= 70       — shown regardless of pace; close is close.
 //   hover            — every bucket, its projection and reset countdown.
 //
-// Data is only as fresh as the last statusline render (see ClaudeUsage), so a
-// stale number greys out rather than lying confidently.
+// Data is only as fresh as the last successful usage poll (see ClaudeUsage),
+// so a stale number greys out rather than lying confidently.
 Item {
     id: root
 
@@ -124,7 +124,7 @@ Item {
 
                 Text {
                     visible: Svc.ClaudeUsage.stale
-                    text: "stale — no session rendering"
+                    text: "stale — usage poll not answering"
                     color: Theme.off
                     font { family: Theme.font; pixelSize: 10; italic: true }
                 }
