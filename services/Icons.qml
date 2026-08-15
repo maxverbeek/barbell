@@ -12,7 +12,7 @@ Singleton {
 
     // Icons no theme here ships, bundled so they come from the store path
     // rather than anything in $HOME. Claude's are the spinner frames below.
-    readonly property var customIcons: ["kubernetes", "neovim", "zen-browser", "claude-code", "claude-spinner-0", "claude-spinner-1", "claude-spinner-2", "claude-spinner-3", "claude-spinner-4", "claude-spinner-5"]
+    readonly property var customIcons: ["kubernetes", "neovim", "zen-browser", "md.Obsidian", "claude-code", "claude-spinner-0", "claude-spinner-1", "claude-spinner-2", "claude-spinner-3", "claude-spinner-4", "claude-spinner-5"]
 
     // Terminal apps all share one app_id, so the title is the only clue — but
     // only inside a terminal. A browser tab named "…/nvim/init.lua" is not nvim.
