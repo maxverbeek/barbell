@@ -23,11 +23,12 @@ Singleton {
         { pattern: /spotify/i, icon: "spotify-client" }
     ]
 
-    // Claude Code prefixes the terminal title with a braille glyph while it is
+    // Claude Code prefixes the terminal title with a spinner glyph while it is
     // working and with ✳ when it wants input — the title is the only marker,
     // there is no app_id to match on. It updates the glyph in place, so the
-    // leading character is what says "still working".
-    readonly property var thinkingPattern: /^[⠀-⣿]/
+    // leading character is what says "still working". The spinner set has
+    // changed across versions: braille frames (⠀-⣿) and circle frames (◐◑◒◓).
+    readonly property var thinkingPattern: /^[⠀-⣿◐-◓]/
 
     // One timer for the whole bar rather than one per window, and it only ticks
     // while some window is actually mid-thought — a bar that spins forever is
