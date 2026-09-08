@@ -3,11 +3,13 @@ import Quickshell.Widgets
 import ".."
 import "../services" as Svc
 
-// One rate-limit bucket — name, fill bar, the figures — or one Claude Code
-// session window, which is just its title. The notch on a bucket's bar is
-// where the window's clock stands — fill left of the notch means under pace,
-// past it means on course to run out. The gap between them is the whole
-// story, which is more than the two numbers say on their own.
+// One rate-limit bucket — name, fill bar, the figures — or one agent session:
+// its mark, its title, its state. A session comes from herdr (`agent`, with
+// herdr's status) or from a bare terminal window (`win`, with working/idle read
+// off the title). The notch on a bucket's bar is where the window's clock
+// stands — fill left of the notch means under pace, past it means on course to
+// run out. The gap between them is the whole story, which is more than the two
+// numbers say on their own.
 Item {
     id: root
 
@@ -19,15 +21,23 @@ Item {
     signal clicked()
 
     readonly property bool empty: row.kind === "empty"
-    readonly property bool isWindow: row.kind === "window"
+    readonly property bool isSession: row.kind === "session"
+    readonly property var agent: isSession ? row.agent ?? null : null
     readonly property var bucket: row.kind === "bucket" ? row.bucket : null
 
+    readonly property string status: agent ? agent.agent_status : row.busy ? "working" : "idle"
+    readonly property string mark: agent ? Svc.Icons.agentIcon(agent.agent, status) : Svc.Icons.claudeIcon(row.win)
+
     // Same lines the bar widget draws with: on pace to run out is warn,
-    // running out well before reset (or nearly full) is bad.
-    readonly property color tone: !bucket ? Theme.fgFaint
-        : bucket.used >= 90 || bucket.projected >= 150 ? Theme.bad
-        : bucket.used >= 70 || bucket.projected >= 100 ? Theme.warn
-        : Theme.accent
+    // running out well before reset (or nearly full) is bad. For a session the
+    // two states that want you carry the same two colours the pill's dot does.
+    readonly property color tone: bucket
+        ? (bucket.used >= 90 || bucket.projected >= 150 ? Theme.bad
+           : bucket.used >= 70 || bucket.projected >= 100 ? Theme.warn
+           : Theme.accent)
+        : status === "blocked" ? Theme.warn
+        : status === "done" ? Theme.good
+        : Theme.fgFaint
 
     implicitHeight: (heading !== "" ? label.implicitHeight + 8 : 0) + 28
 
@@ -47,30 +57,30 @@ Item {
         color: root.active ? Theme.islandActive : "transparent"
 
         // The same mark the bar draws: the spinner frames while the session is
-        // working, the plain logo while it waits on you. Two states one glyph
-        // can't tell apart — ✳ animates too, so a still logo is the only way
+        // working, the resting mark otherwise. A resting agent is dimmed so
         // "idle" reads as idle at a glance.
         IconImage {
             id: glyph
-            visible: root.isWindow
-            source: root.isWindow ? Svc.Icons.resolve(Svc.Icons.claudeIcon(root.row.win)) : ""
+            visible: root.isSession
+            source: root.isSession ? Svc.Icons.resolve(root.mark) : ""
             implicitSize: 14
-            opacity: root.row.busy ? 1 : 0.55
+            opacity: root.status === "working" || root.status === "blocked" || root.status === "done" ? 1 : 0.55
             anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
         }
 
         Text {
             id: name
             text: root.empty ? "no data"
-                : root.isWindow ? root.row.title
+                : root.isSession ? root.row.title
                 : Svc.ClaudeUsage.bucketName(root.bucket.key)
             color: root.empty ? Theme.fgFaint : Theme.fg
             font { family: Theme.font; pixelSize: 12 }
-            // A session row is all title, a bucket row leaves room for the bar.
-            width: root.isWindow ? parent.width - 28 : 48
+            // A session row is title plus the state word; a bucket row leaves
+            // room for the bar between name and figures.
+            width: root.isSession ? parent.width - 28 - figures.width - 18 : 48
             elide: Text.ElideRight
             anchors {
-                left: root.isWindow ? glyph.right : parent.left
+                left: root.isSession ? glyph.right : parent.left
                 leftMargin: 6
                 verticalCenter: parent.verticalCenter
             }
@@ -107,9 +117,10 @@ Item {
 
         Text {
             id: figures
-            text: !root.bucket ? ""
-                : `${Math.round(root.bucket.used)}%  ·  ${Svc.ClaudeUsage.untilReset(root.bucket.resetsAt)}`
-            color: root.tone === Theme.accent ? Theme.fgDim : root.tone
+            text: root.bucket
+                ? `${Math.round(root.bucket.used)}%  ·  ${Svc.ClaudeUsage.untilReset(root.bucket.resetsAt)}`
+                : root.isSession ? root.status : ""
+            color: root.tone === Theme.accent || root.tone === Theme.fgFaint ? Theme.fgDim : root.tone
             font { family: Theme.font; pixelSize: 11 }
             // Fixed width, right-aligned: "3h12m" and "5d" are different sizes,
             // and natural width would let each row's countdown decide where the

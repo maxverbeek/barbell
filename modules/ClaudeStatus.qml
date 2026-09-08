@@ -32,7 +32,7 @@ Item {
     // No session, no warning: quota only matters while something is spending
     // it, and the c menu still answers on demand when nothing is.
     readonly property bool sessionOpen:
-        Object.values(Svc.Niri.windows).some(w => Svc.Icons.isClaude(w))
+        Object.values(Svc.Niri.windows).some(w => Svc.Icons.isClaude(w)) || Svc.Herdr.agents.length > 0
 
     readonly property bool interesting:
         sessionOpen && Svc.ClaudeUsage.known && (risk.used >= 70 || onPace)
