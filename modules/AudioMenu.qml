@@ -56,11 +56,17 @@ Menu {
         else Audio.setSinkVolume(Audio.sinkVolume + delta);
     }
 
-    // m mutes whatever row you're on without having to walk to its slider.
-    // Not while searching, where it's just a letter in the query.
+    // m mutes whatever row you're on without having to walk to its slider;
+    // r on an input starts a mictap recording from it. Not while searching,
+    // where they're just letters in the query.
     handleKey: event => {
-        if (root.searching || event.key !== Qt.Key_M) return false;
+        if (root.searching) return false;
         const row = root.rows[root.selected];
+        if (event.key === Qt.Key_R) {
+            if (row?.kind === "source") { Mictap.start(row.node.name); root.hide(); }
+            return true;
+        }
+        if (event.key !== Qt.Key_M) return false;
         if (!row) return true;
         const isSource = row.kind === "source"
             || (row.kind === "volume" && row.which === "source");
