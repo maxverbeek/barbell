@@ -14,8 +14,10 @@ Menu {
 
     allRows: {
         const out = [];
-        if (Mictap.recording)
+        if (Mictap.recording) {
             out.push({ kind: "stop", section: "Recording" });
+            for (const t of Mictap.status.tracks ?? []) out.push({ kind: "track", track: t, section: "Recording" });
+        }
         else
             for (const n of Audio.sources) out.push({ kind: "start", node: n, section: "Record from" });
         if (Mictap.listState !== "ok")

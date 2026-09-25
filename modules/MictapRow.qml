@@ -36,6 +36,8 @@ Item {
             return clock(now - (Mictap.status.started_ms ?? now))
                 + (Mictap.status.app ? "  " + Mictap.status.app : "");
         case "start": return Audio.label(row.node);
+        // Onboard mics are named after the chip; drop it, as Audio.label does.
+        case "track": return row.track.name.replace(/^.*\bcAVS\s+/, "");
         case "rec": return row.rec.date ? row.rec.date.slice(11) : "not uploaded yet";
         case "loading": return "Loading...";
         case "error": return "Server unreachable";
@@ -46,6 +48,7 @@ Item {
     readonly property string detail: {
         const r = row.rec;
         if (row.kind === "start") return row.node === Audio.source ? "default" : "";
+        if (row.kind === "track") return row.track.key === "mic" ? "mic" : "meeting audio";
         if (row.kind !== "rec") return "";
         if (r.status === "transcribing")
             return `transcribing ${Math.floor(r.done_ms / 60000)}/${Math.ceil(r.total_ms / 60000)} min`;
@@ -77,7 +80,10 @@ Item {
             spacing: 8
 
             Text {
-                text: root.row.kind === "stop" ? "●" : root.row.kind === "start" ? "󰍬" : root.row.kind === "rec" ? "󰈙" : " "
+                text: root.row.kind === "stop" ? "●"
+                    : root.row.kind === "start" || root.row.track?.key === "mic" ? "󰍬"
+                    : root.row.kind === "track" ? "󰕾"
+                    : root.row.kind === "rec" ? "󰈙" : " "
                 font { family: Theme.iconFont; pixelSize: 13 }
                 color: root.actionable ? Theme.fg : Theme.fgDim
                 Layout.preferredWidth: 16
@@ -85,7 +91,7 @@ Item {
 
             Text {
                 text: root.title
-                color: root.row.kind === "rec" || root.actionable ? Theme.fg : Theme.fgFaint
+                color: root.row.kind === "rec" || root.row.kind === "track" || root.actionable ? Theme.fg : Theme.fgFaint
                 font { family: Theme.font; pixelSize: 12 }
                 elide: Text.ElideRight
                 Layout.fillWidth: true
