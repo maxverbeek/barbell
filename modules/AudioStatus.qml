@@ -7,15 +7,16 @@ import "../services"
 //             throughout; colour says where the sound is going.
 //   mic     — drawn only when something is listening or it's muted. Muted
 //             *while* something wants it is the loud case: you're talking and
-//             nobody can hear you.
+//             nobody can hear you. A dot after it means mictap is recording;
+//             clicking it opens the mictap tab.
 Row {
     // Matches the island's gap, so mic-speaker doesn't read as looser than
     // the rest of the row.
     spacing: 10
 
     Text {
-        visible: Audio.micInUse || Audio.micMuted
-        text: Audio.micMuted ? "󰍭" : "󰍬"
+        visible: Audio.micInUse || Audio.micMuted || Mictap.recording
+        text: (Audio.micMuted ? "󰍭" : "󰍬") + (Mictap.recording ? " ●" : "")
         font { family: Theme.iconFont; pixelSize: 16 }
         color: Audio.micMuted
             ? (Audio.micInUse ? Theme.bad : Theme.warn)  // in-use+muted is the mistake
@@ -31,6 +32,11 @@ Row {
             NumberAnimation { to: 1.0; duration: 900; easing.type: Easing.InOutQuad }
         }
         onVisibleChanged: if (!visible) opacity = 1
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: Menus.toggle("mictap")
+        }
     }
 
     Text {

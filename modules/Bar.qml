@@ -36,7 +36,6 @@ PanelWindow {
             Item { Layout.fillWidth: true }
 
             // Exceptions and the always-drawn constants, in a fixed order.
-            MictapStatus { Layout.alignment: Qt.AlignVCenter }
             SysStatus { Layout.alignment: Qt.AlignVCenter }
 
             AgentStatus { Layout.alignment: Qt.AlignVCenter }
