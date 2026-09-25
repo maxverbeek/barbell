@@ -18,21 +18,26 @@ Item {
     signal clicked()
     signal scrolled(real delta)
 
-    readonly property bool isVolume: row.kind === "volume"
+    // An app's playback stream: a slider for that one node, named after the app.
+    readonly property bool isStream: row.kind === "stream"
+    readonly property bool isVolume: row.kind === "volume" || isStream
     readonly property bool isSource: row.kind === "source"
         || (isVolume && row.which === "source")
     readonly property bool current: !isVolume
         && row.node === (isSource ? Audio.source : Audio.sink)
 
-    readonly property real level: isSource ? Audio.micVolume : Audio.sinkVolume
-    readonly property bool muted: isSource ? Audio.micMuted : Audio.sinkMuted
+    readonly property real level: isStream ? (row.node.audio?.volume ?? 0)
+        : isSource ? Audio.micVolume : Audio.sinkVolume
+    readonly property bool muted: isStream ? (row.node.audio?.muted ?? false)
+        : isSource ? Audio.micMuted : Audio.sinkMuted
 
 
     // Drag target. Setting a level explicitly rather than nudging, so the
     // pointer position is the value.
     function setFraction(f) {
         const v = Math.max(0, Math.min(1, f));
-        if (isSource) Audio.setMicVolume(v);
+        if (isStream) Audio.setNodeVolume(row.node, v);
+        else if (isSource) Audio.setMicVolume(v);
         else Audio.setSinkVolume(v);
     }
 
@@ -84,6 +89,15 @@ Item {
                 }
                 elide: Text.ElideRight
                 Layout.fillWidth: true
+            }
+
+            Text {
+                visible: root.isStream
+                text: Audio.appName(root.row.node)
+                color: Theme.fgDim
+                font { family: Theme.font; pixelSize: 12 }
+                elide: Text.ElideRight
+                Layout.preferredWidth: 90
             }
 
             // The grab area is the full row height, not the 4px bar — a hairline

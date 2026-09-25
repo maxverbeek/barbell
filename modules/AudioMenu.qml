@@ -15,6 +15,7 @@ Menu {
         const out = [];
         out.push({ kind: "volume", which: "sink", section: "Levels" });
         out.push({ kind: "volume", which: "source", section: "Levels" });
+        for (const n of Audio.streams) out.push({ kind: "stream", node: n, section: "Apps" });
         for (const n of Audio.sinks) out.push({ kind: "sink", node: n, section: "Output" });
         for (const n of Audio.sources) out.push({ kind: "source", node: n, section: "Input" });
         return out;
@@ -23,7 +24,7 @@ Menu {
     // Sliders aren't named things, so they never match a query — and never get
     // filtered out either. Losing your volume control because you typed a
     // device name would be daft.
-    rowText: row => row.kind === "volume" ? "" : Audio.label(row.node)
+    rowText: row => row.kind === "volume" || row.kind === "stream" ? "" : Audio.label(row.node)
 
     // ] from the sliders should land on the device in use, not on whatever
     // sorts first — since the list stopped reordering, those differ.
@@ -31,7 +32,7 @@ Menu {
         const first = rows.findIndex(r => r.section === section);
         if (first < 0) return -1;
         const active = rows.findIndex(r => r.section === section
-            && r.kind !== "volume"
+            && r.kind !== "volume" && r.kind !== "stream"
             && r.node === (r.kind === "source" ? Audio.source : Audio.sink));
         return active >= 0 ? active : first;
     }
@@ -41,33 +42,30 @@ Menu {
     activateRow: row => {
         if (row.kind === "sink") Audio.setSink(row.node);
         else if (row.kind === "source") Audio.setSource(row.node);
+        else if (row.kind === "stream") Audio.toggleNodeMute(row.node);
         else if (row.which === "sink") Audio.toggleSinkMute();
         else Audio.toggleMicMute();
         // Picking a device is the end of a search.
-        if (row.kind !== "volume") root.clearSearch();
+        if (row.kind === "sink" || row.kind === "source") root.clearSearch();
     }
 
     // h/l adjust whichever stream the current row belongs to, so you can land
     // on an output and change its level without walking down to the slider.
     nudgeRow: (row, delta) => {
+        if (row.kind === "stream") { Audio.setNodeVolume(row.node, row.node.audio.volume + delta); return; }
         const isSource = row.kind === "source"
             || (row.kind === "volume" && row.which === "source");
         if (isSource) Audio.setMicVolume(Audio.micVolume + delta);
         else Audio.setSinkVolume(Audio.sinkVolume + delta);
     }
 
-    // m mutes whatever row you're on without having to walk to its slider;
-    // r on an input starts a mictap recording from it. Not while searching,
-    // where they're just letters in the query.
+    // m mutes whatever row you're on without having to walk to its slider.
+    // Not while searching, where it's just a letter in the query.
     handleKey: event => {
-        if (root.searching) return false;
+        if (root.searching || event.key !== Qt.Key_M) return false;
         const row = root.rows[root.selected];
-        if (event.key === Qt.Key_R) {
-            if (row?.kind === "source") { Mictap.start(row.node.name); root.hide(); }
-            return true;
-        }
-        if (event.key !== Qt.Key_M) return false;
         if (!row) return true;
+        if (row.kind === "stream") { Audio.toggleNodeMute(row.node); return true; }
         const isSource = row.kind === "source"
             || (row.kind === "volume" && row.which === "source");
         if (isSource) Audio.toggleMicMute();

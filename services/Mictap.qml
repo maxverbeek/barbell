@@ -19,6 +19,28 @@ Singleton {
     function stop() { Quickshell.execDetached(["mictap", "stop"]); }
     function discard() { Quickshell.execDetached(["mictap", "discard"]); }
 
+    // Today's recordings and their transcription, fetched when the tab opens.
+    property var today: []
+    property string listState: "loading"   // "loading" | "ok" | "error"
+    function refresh() { listState = "loading"; list.running = true; }
+
+    Process {
+        id: list
+        command: ["mictap", "recordings", "--json"]
+        // Not uploaded yet means no date: those are always today's news.
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const day = Qt.formatDate(new Date(), "yyyy-MM-dd");
+                    root.today = JSON.parse(text).filter(r => !r.date || r.date.startsWith(day));
+                    root.listState = "ok";
+                } catch (e) {
+                    root.listState = "error";
+                }
+            }
+        }
+    }
+
     Socket {
         id: sub
         path: root.socketPath

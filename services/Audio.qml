@@ -33,6 +33,14 @@ Singleton {
         .filter(n => !n.isStream && (n.type & PwNodeType.AudioSource) === PwNodeType.AudioSource)
         .sort(byLikelihood)
 
+    // Apps playing right now, one volume each. They come and go with playback.
+    readonly property var streams: (Pipewire.nodes?.values ?? [])
+        .filter(n => n.isStream && (n.type & PwNodeType.AudioOutStream) === PwNodeType.AudioOutStream)
+
+    function appName(node) {
+        return node?.properties?.["application.name"] || node?.description || node?.name || "?";
+    }
+
     // Pipewire lists every HDMI port whether or not a monitor is plugged in,
     // and the availability flag lives on the ALSA card profile, which isn't
     // exposed here. So rather than filter them out, sink them: headphones and
@@ -77,7 +85,7 @@ Singleton {
     // just the active pair, or the list comes up blank until you select one.
     PwObjectTracker {
         objects: [root.sink, root.source].filter(n => n)
-            .concat(root.sinks).concat(root.sources)
+            .concat(root.sinks).concat(root.sources).concat(root.streams)
     }
 
     PwNodeLinkTracker {
@@ -89,4 +97,6 @@ Singleton {
     function setMicVolume(v) { if (source?.audio) source.audio.volume = Math.max(0, Math.min(1, v)); }
     function toggleSinkMute() { if (sink?.audio) sink.audio.muted = !sink.audio.muted; }
     function toggleMicMute() { if (source?.audio) source.audio.muted = !source.audio.muted; }
+    function setNodeVolume(node, v) { if (node?.audio) node.audio.volume = Math.max(0, Math.min(1, v)); }
+    function toggleNodeMute(node) { if (node?.audio) node.audio.muted = !node.audio.muted; }
 }

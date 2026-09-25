@@ -220,6 +220,7 @@ PanelWindow {
             // tabs and mutes from the third is worse than a less obvious one.
             case Qt.Key_P: Menus.open("media");     event.accepted = true; return;
             case Qt.Key_C: Menus.open("claude");    event.accepted = true; return;
+            case Qt.Key_R: Menus.open("mictap");    event.accepted = true; return;
             }
 
             switch (event.key) {
@@ -301,7 +302,8 @@ PanelWindow {
                             { menu: "network",   key: "w", glyph: "󰤨" },
                             { menu: "bluetooth", key: "b", glyph: "󰂯" },
                             { menu: "media",     key: "p", glyph: "󰎈" },
-                            { menu: "claude",    key: "c", glyph: "✳" }
+                            { menu: "claude",    key: "c", glyph: "✳" },
+                            { menu: "mictap",    key: "r", glyph: "󰍬" }
                         ]
 
                         delegate: Rectangle {
