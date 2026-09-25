@@ -34,8 +34,9 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
 
         Text {
-            text: !Network.wifiEnabled ? "󰤮"
-                : Network.wired ? "󰈁"
+            // A cable beats everything, including wifi being switched off.
+            text: Network.wired ? "󰈁"
+                : !Network.wifiEnabled ? "󰤮"
                 : !Network.wifiConnected ? "󰤯"
                 : Network.signal >= 0.75 ? "󰤨"
                 : Network.signal >= 0.5 ? "󰤥"
@@ -43,8 +44,8 @@ Row {
                 : "󰤟"
             font { family: Theme.iconFont; pixelSize: 15 }
             // Off is a choice; disconnected-but-on is a problem.
-            color: !Network.wifiEnabled ? Theme.off
-                : (Network.wifiConnected || Network.wired) ? Theme.fg
+            color: (Network.wired || Network.wifiConnected) ? Theme.fg
+                : !Network.wifiEnabled ? Theme.off
                 : Theme.warn
             anchors.verticalCenter: parent.verticalCenter
         }
