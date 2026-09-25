@@ -18,7 +18,6 @@ Singleton {
     }
     function stop() { Quickshell.execDetached(["mictap", "stop"]); }
     function discard() { Quickshell.execDetached(["mictap", "discard"]); }
-    function toggle() { if (recording) stop(); else start(""); }
 
     Socket {
         id: sub

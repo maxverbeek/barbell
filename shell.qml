@@ -75,12 +75,4 @@ ShellRoot {
         // trusted (screencopy breaks); this asks the live instance instead.
         function dump(): string { return Menus.describe ? Menus.describe() : ""; }
     }
-
-    //   qs ipc call mictap toggle   (start from the default mic, or stop)
-    IpcHandler {
-        target: "mictap"
-
-        function toggle(): void { Mictap.toggle(); }
-        function discard(): void { Mictap.discard(); }
-    }
 }
