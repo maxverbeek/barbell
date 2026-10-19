@@ -80,6 +80,10 @@ Singleton {
         onNotification: n => {
             // Tracking is what keeps the object alive past this signal.
             n.tracked = true;
+            // Closed by the sender or the app exiting: drop it before it's
+            // destroyed, or the dangling entry crashes the next Repeater rebuild.
+            // trackedNotificationsChanged doesn't fire on membership changes.
+            n.closed.connect(() => root.active = root.active.filter(x => x !== n));
 
             // A repeat from the same app replacing its own notification
             // shouldn't stack up — drop the older one.
@@ -91,17 +95,6 @@ Singleton {
             // Pushed off the bottom is closer to expiring than to being read.
             while (root.active.length > root.maxVisible)
                 root.expire(root.active[root.active.length - 1]);
-        }
-    }
-
-    // A notification that goes away on its own — closed by the sender, or the
-    // app exiting — has to leave the list too.
-    Connections {
-        target: server
-        function onTrackedNotificationsChanged() {
-            const live = new Set(server.trackedNotifications?.values ?? []);
-            const kept = root.active.filter(n => live.has(n));
-            if (kept.length !== root.active.length) root.active = kept;
         }
     }
 }
